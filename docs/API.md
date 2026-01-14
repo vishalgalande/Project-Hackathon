@@ -3,65 +3,93 @@
 This document describes all available backend API endpoints.
 
 ## Base URL
-When running locally: `http://localhost:5000`
-When deployed on Vercel: `https://your-app.vercel.app/api`
+- **Local**: `http://localhost:5000`
+- **Vercel**: `https://your-app.vercel.app/api`
 
 ---
 
-## Zones API (Geo-Fencing)
+## Authentication
+
+All voting endpoints require authentication. Include the Firebase ID token in the header:
+
+```
+Authorization: Bearer <firebase_id_token>
+```
+
+### Getting the Token (Flutter)
+
+```dart
+import 'package:firebase_auth/firebase_auth.dart';
+
+Future<String?> getAuthToken() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    return await user.getIdToken();
+  }
+  return null;
+}
+
+// Usage in API calls
+Future<void> makeAuthenticatedRequest() async {
+  final token = await getAuthToken();
+  final response = await http.post(
+    Uri.parse('$baseUrl/zones/delhi_001/vote'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    },
+    body: jsonEncode({'vote': 1}),
+  );
+}
+```
+
+---
+
+## Zones API
 
 ### GET `/zones`
 Returns all map chunks with their current zone colors.
+
+**Authentication**: Not required
 
 **Response:**
 ```json
 {
   "success": true,
-  "count": 6,
+  "count": 9,
+  "source": "firestore",
   "zones": [
     {
-      "id": "chunk_001",
-      "name": "Beach Area",
+      "id": "delhi_001",
+      "name": "Connaught Place",
       "bounds": {
-        "lat_min": 12.91,
-        "lat_max": 12.92,
-        "lng_min": 77.58,
-        "lng_max": 77.59
+        "lat_min": 28.628,
+        "lat_max": 28.638,
+        "lng_min": 77.215,
+        "lng_max": 77.225
       },
-      "score": 6,
-      "zone_color": "green",
-      "vote_count": 6
+      "score": 8,
+      "zone_color": "green"
     }
   ]
 }
 ```
 
-### GET `/zones/{chunk_id}`
-Returns details for a single chunk.
+### GET `/zones/{zone_id}`
+Returns details for a single zone.
 
-**Parameters:**
-- `chunk_id` (string): The ID of the chunk (e.g., `chunk_001`)
+**Authentication**: Not required
 
-**Response:**
-```json
-{
-  "success": true,
-  "zone": {
-    "id": "chunk_001",
-    "name": "Beach Area",
-    "bounds": { ... },
-    "score": 6,
-    "zone_color": "green",
-    "vote_count": 6
-  }
-}
-```
-
-### POST `/zones/{chunk_id}/vote`
+### POST `/zones/{zone_id}/vote`
 Submit a safety vote for a zone.
 
-**Parameters:**
-- `chunk_id` (string): The ID of the chunk
+**Authentication**: ✅ Required
+
+**Headers:**
+```
+Authorization: Bearer <firebase_id_token>
+Content-Type: application/json
+```
 
 **Request Body:**
 ```json
@@ -75,24 +103,18 @@ Submit a safety vote for a zone.
 ```json
 {
   "success": true,
-  "message": "Vote recorded for Beach Area",
-  "new_score": 7,
+  "message": "Vote recorded for Connaught Place",
+  "new_score": 9,
   "new_zone_color": "green"
 }
 ```
 
-### GET `/zones/location?lat=X&lng=Y`
-Find which zone contains a specific coordinate.
-
-**Query Parameters:**
-- `lat` (float): Latitude
-- `lng` (float): Longitude
-
-**Response:**
+**Error Response (401):**
 ```json
 {
-  "success": true,
-  "zone": { ... }
+  "success": false,
+  "error": "Authentication required",
+  "code": "UNAUTHORIZED"
 }
 ```
 
@@ -108,23 +130,136 @@ Find which zone contains a specific coordinate.
 
 ---
 
-## Flutter Integration Example
+## Flutter Complete Example
+
+### 1. Setup Firebase Auth
+
+```dart
+// pubspec.yaml
+dependencies:
+  firebase_core: ^2.24.0
+  firebase_auth: ^4.16.0
+  cloud_firestore: ^4.14.0
+  http: ^1.1.0
+```
+
+### 2. Auth Service
+
+```dart
+import 'package:firebase_auth/firebase_auth.dart';
+
+class AuthService {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  // Sign in with email/password
+  Future<User?> signIn(String email, String password) async {
+    final result = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    return result.user;
+  }
+  
+  // Sign up
+  Future<User?> signUp(String email, String password) async {
+    final result = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    return result.user;
+  }
+  
+  // Sign out
+  Future<void> signOut() => _auth.signOut();
+  
+  // Get current user
+  User? get currentUser => _auth.currentUser;
+  
+  // Get ID token for API calls
+  Future<String?> getIdToken() async {
+    return await currentUser?.getIdToken();
+  }
+}
+```
+
+### 3. Zone API Service
 
 ```dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-Future<List<Zone>> fetchZones() async {
-  final response = await http.get(Uri.parse('$baseUrl/zones'));
-  final data = jsonDecode(response.body);
-  return (data['zones'] as List).map((z) => Zone.fromJson(z)).toList();
+class ZoneService {
+  final String baseUrl;
+  final AuthService authService;
+  
+  ZoneService({required this.baseUrl, required this.authService});
+  
+  // Fetch all zones (no auth required)
+  Future<List<Zone>> fetchZones() async {
+    final response = await http.get(Uri.parse('$baseUrl/zones'));
+    final data = jsonDecode(response.body);
+    return (data['zones'] as List)
+        .map((z) => Zone.fromJson(z))
+        .toList();
+  }
+  
+  // Submit vote (auth required)
+  Future<VoteResult> submitVote(String zoneId, int vote) async {
+    final token = await authService.getIdToken();
+    if (token == null) throw Exception('Not logged in');
+    
+    final response = await http.post(
+      Uri.parse('$baseUrl/zones/$zoneId/vote'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'vote': vote}),
+    );
+    
+    if (response.statusCode == 401) {
+      throw Exception('Please log in to vote');
+    }
+    
+    return VoteResult.fromJson(jsonDecode(response.body));
+  }
 }
+```
 
-Future<void> submitVote(String chunkId, int vote) async {
-  await http.post(
-    Uri.parse('$baseUrl/zones/$chunkId/vote'),
-    body: jsonEncode({'vote': vote}),
-    headers: {'Content-Type': 'application/json'},
-  );
+### 4. Zone Model
+
+```dart
+class Zone {
+  final String id;
+  final String name;
+  final Map<String, double> bounds;
+  final int score;
+  final String zoneColor;
+  
+  Zone({
+    required this.id,
+    required this.name,
+    required this.bounds,
+    required this.score,
+    required this.zoneColor,
+  });
+  
+  factory Zone.fromJson(Map<String, dynamic> json) {
+    return Zone(
+      id: json['id'],
+      name: json['name'],
+      bounds: Map<String, double>.from(json['bounds']),
+      score: json['score'],
+      zoneColor: json['zone_color'],
+    );
+  }
+  
+  Color get color {
+    switch (zoneColor) {
+      case 'green': return Colors.green;
+      case 'red': return Colors.red;
+      default: return Colors.yellow;
+    }
+  }
 }
 ```

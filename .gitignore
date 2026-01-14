@@ -51,3 +51,5 @@ firebase/service_account.json
 .idea/
 *.swp
 *.swo
+
+tools/
