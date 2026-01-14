@@ -50,8 +50,8 @@ def health_check():
     }), 200
 
 if __name__ == '__main__':
-    print("🚌 Starting Public Transport Tracking API...")
-    print("📍 Server running on http://localhost:5000")
-    print("🌍 CORS enabled for all origins")
+    print("Starting Public Transport Tracking API...")
+    print("Server running on http://localhost:5000")
+    print("CORS enabled for all origins")
     app.run(debug=True, host='0.0.0.0', port=5000)
 
