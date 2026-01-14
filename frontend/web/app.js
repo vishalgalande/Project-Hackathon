@@ -62,9 +62,9 @@ function initializeMap() {
         markerZoomAnimation: true
     }).setView([20.5937, 78.9629], 5); // Center of India
 
-    // Add tile layer (OpenStreetMap)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
+    // Add tile layer (CartoDB Voyager for better street visibility)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors & CartoDB',
         maxZoom: 19,
         minZoom: 4
     }).addTo(state.map);
@@ -155,7 +155,8 @@ function updateVehicleMarkers() {
 
             // Animate only if position changed significantly
             if (oldPos.distanceTo(newPos) > 10) {
-                animateMarkerMovement(existingItem.marker, oldPos, newPos, 4000);
+                // Use CSS transition (defined in styles.css) for performance instead of JS loop
+                existingItem.marker.setLatLng(newPos);
             }
 
             // Update popup/tooltip info
@@ -256,25 +257,13 @@ function startGlobalVehicleTracking() {
 /**
  * Animate marker movement smoothly
  */
+/**
+ * CSS Transition handles animation now.
+ * Keeping this helper empty or removed to avoid JS overhead.
+ */
 function animateMarkerMovement(marker, startPos, endPos, duration) {
-    const startTime = Date.now();
-
-    function updatePosition() {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-
-        // Ease-in-out
-        const ease = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-
-        const lat = startPos.lat + (endPos.lat - startPos.lat) * ease;
-        const lng = startPos.lng + (endPos.lng - startPos.lng) * ease;
-
-        marker.setLatLng([lat, lng]);
-
-        if (progress < 1) requestAnimationFrame(updatePosition);
-    }
-
-    requestAnimationFrame(updatePosition);
+    // Deprecated in favor of CSS transitions
+    // marker.setLatLng(endPos); 
 }
 
 /**
@@ -463,7 +452,7 @@ function openTrafficReport() {
         const badgeText = isCrowded ? `${Math.round((v.occupancy / v.capacity) * 100)}% Full` : v.status;
 
         return `
-            <div class="traffic-item ${cssClass}" onclick="panToVehicle('${v.id}')">
+            <div class="traffic-item ${cssClass}" onclick="openVehicleRoute('${v.id}', '${v.route_id}')">
                 <div class="traffic-info">
                     <div class="traffic-route">${v.route_number || v.route_name}</div>
                     <div class="traffic-details"><span>#${v.id.split('_')[1]} • ${v.speed} km/h</span></div>
@@ -498,23 +487,41 @@ function openTrafficReport() {
 }
 
 /**
- * Helper: Pan specifically to a vehicle from report
+ * Helper: Switch to route and pan to vehicle
  */
-window.panToVehicle = function (vehicleId) {
-    const vehicle = state.vehicles.find(v => v.id === vehicleId);
-    if (vehicle) {
-        closeTrafficReport();
-        state.map.flyTo([vehicle.position.lat, vehicle.position.lng], 15, {
-            animate: true,
-            duration: 1.5
-        });
+window.openVehicleRoute = async function (vehicleId, routeId) {
+    closeTrafficReport();
 
-        // Open popup after arrival
-        setTimeout(() => {
+    // 1. Load the route details (switches view)
+    await loadRouteDetails(routeId);
+
+    // 2. Find the vehicle marker (now part of the route view)
+    // We need a small delay to allow the route markers to be created
+    setTimeout(() => {
+        const vehicle = state.vehicles.find(v => v.id === vehicleId) ||
+            state.markers.vehicles.find(m => m.id === vehicleId); // might be in state.markers if loaded
+
+        if (vehicle) {
+            // Find marker object
             const markerItem = state.markers.vehicles.find(m => m.id === vehicleId);
-            if (markerItem) markerItem.marker.openPopup();
-        }, 1600);
-    }
+
+            if (markerItem) {
+                state.map.flyTo(markerItem.marker.getLatLng(), 15, {
+                    animate: true,
+                    duration: 1.5
+                });
+                markerItem.marker.openPopup();
+            } else {
+                // Try finding it in the freshly loaded state.vehicles if not yet matched
+                const freshVehicle = state.vehicles.find(v => v.id === vehicleId);
+                if (freshVehicle) state.map.flyTo([freshVehicle.position.lat, freshVehicle.position.lng], 15);
+            }
+        }
+    }, 500);
+};
+
+window.panToVehicle = function (vehicleId) {
+    // Deprecated for direct pan, now uses openVehicleRoute
 };
 
 window.closeTrafficReport = function () {

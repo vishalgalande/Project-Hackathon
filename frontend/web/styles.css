@@ -901,7 +901,8 @@ body {
    =================================== */
 
 .vehicle-marker {
-    background: transparent !important;
+    background: transparent;
+    transition: transform 4s linear;
     border: none !important;
 }
 
