@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'auth/auth_dialogs.dart';
+import 'chatbot/chat_button.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -44,6 +45,8 @@ class _LandingPageState extends State<LandingPage> {
               SliverToBoxAdapter(child: _buildFooter()),
             ],
           ),
+          // AI Chatbot floating button
+          const ChatButton(),
         ],
       ),
     );
