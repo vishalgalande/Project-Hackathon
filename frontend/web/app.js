@@ -15,6 +15,7 @@ const state = {
         routes: []
     },
     updateInterval: null,
+    globalUpdateInterval: null,
     showVehicles: true // Vehicles visible by default
 };
 
@@ -108,15 +109,22 @@ async function loadRoutes(filters = {}) {
 async function loadAllVehicles(filters = {}) {
     try {
         const response = await api.getAllVehicles(filters);
-        state.vehicles = response.data;
+        state.vehicles = response.data || [];
+
+        console.log(`Loaded ${state.vehicles.length} vehicles`);
 
         // Display vehicles on map
         displayVehicles();
 
         // Update stats
         updateStats();
+
+        // Start auto-refresh for vehicle positions
+        startGlobalVehicleTracking();
     } catch (error) {
         console.error('Failed to load vehicles:', error);
+        state.vehicles = [];
+        updateStats();
     }
 }
 
@@ -219,8 +227,12 @@ function displayVehicles() {
             this.openTooltip();
         });
 
+        // Store marker reference with vehicle ID for updates
+        marker.vehicleId = vehicle.id;
         state.markers.vehicles.push(marker);
     });
+
+    console.log(`Displayed ${state.vehicles.length} vehicle markers`);
 }
 
 /**
@@ -444,8 +456,105 @@ function startVehicleTracking(routeId) {
  * Update statistics display
  */
 function updateStats() {
-    document.getElementById('active-routes').textContent = state.routes.length;
-    document.getElementById('active-vehicles').textContent = state.vehicles.length;
+    const routeCount = state.routes ? state.routes.length : 0;
+    const vehicleCount = state.vehicles ? state.vehicles.length : 0;
+
+    document.getElementById('active-routes').textContent = routeCount;
+    document.getElementById('active-vehicles').textContent = vehicleCount;
+
+    console.log(`Stats updated - Routes: ${routeCount}, Vehicles: ${vehicleCount}`);
+}
+
+/**
+ * Start global vehicle tracking with smooth movement
+ */
+function startGlobalVehicleTracking() {
+    // Clear existing interval
+    if (state.globalUpdateInterval) {
+        clearInterval(state.globalUpdateInterval);
+    }
+
+    // Update every 5 seconds
+    state.globalUpdateInterval = setInterval(async () => {
+        if (!state.showVehicles || state.selectedRoute) return;
+
+        try {
+            const response = await api.getAllVehicles({});
+            const updatedVehicles = response.data || [];
+
+            // Smoothly move vehicles to new positions
+            updatedVehicles.forEach(updatedVehicle => {
+                const marker = state.markers.vehicles.find(m => m.vehicleId === updatedVehicle.id);
+                if (marker) {
+                    const oldPos = marker.getLatLng();
+                    const newPos = L.latLng(updatedVehicle.position.lat, updatedVehicle.position.lng);
+
+                    // Animate movement
+                    animateMarkerMovement(marker, oldPos, newPos, 4000); // 4 second animation
+
+                    // Update popup content
+                    const nextStops = updatedVehicle.next_stops || [];
+                    const nextStopText = nextStops.length >= 2
+                        ? `${nextStops[0].name} (${nextStops[0].eta} min) → ${nextStops[1].name} (${nextStops[1].eta} min)`
+                        : 'Terminal';
+
+                    marker.setPopupContent(`
+                        <div style="font-family: Inter, sans-serif; min-width: 220px;">
+                            <div style="font-weight: 700; font-size: 16px; margin-bottom: 8px; color: #667eea;">
+                                ${updatedVehicle.route_number || 'Route'}
+                            </div>
+                            <div style="font-weight: 600; margin-bottom: 8px; font-size: 14px;">${updatedVehicle.route_name}</div>
+                            <div style="font-size: 13px; color: #333; line-height: 1.8;">
+                                <div>🚀 <strong>Speed:</strong> ${updatedVehicle.speed} km/h</div>
+                                <div>⏱️ <strong>Status:</strong> <span style="color: ${updatedVehicle.status && updatedVehicle.status.includes('Delayed') ? '#f5576c' : '#4ade80'};">${updatedVehicle.status || 'On Time'}</span></div>
+                                <div>📍 <strong>Next Stops:</strong><br><span style="margin-left: 20px;">${nextStopText}</span></div>
+                                <div>👥 <strong>Occupancy:</strong> ${updatedVehicle.occupancy}/${updatedVehicle.capacity} (${Math.round((updatedVehicle.occupancy / updatedVehicle.capacity) * 100)}%)</div>
+                            </div>
+                        </div>
+                    `);
+                }
+            });
+
+            // Update state
+            state.vehicles = updatedVehicles;
+            updateStats();
+
+        } catch (error) {
+            console.error('Failed to update vehicles:', error);
+        }
+    }, 5000);
+}
+
+/**
+ * Animate marker movement smoothly
+ */
+function animateMarkerMovement(marker, startPos, endPos, duration) {
+    const startTime = Date.now();
+    const startLat = startPos.lat;
+    const startLng = startPos.lng;
+    const endLat = endPos.lat;
+    const endLng = endPos.lng;
+
+    function updatePosition() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Easing function for smooth movement
+        const easeProgress = progress < 0.5
+            ? 2 * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+        const currentLat = startLat + (endLat - startLat) * easeProgress;
+        const currentLng = startLng + (endLng - startLng) * easeProgress;
+
+        marker.setLatLng([currentLat, currentLng]);
+
+        if (progress < 1) {
+            requestAnimationFrame(updatePosition);
+        }
+    }
+
+    requestAnimationFrame(updatePosition);
 }
 
 /**
