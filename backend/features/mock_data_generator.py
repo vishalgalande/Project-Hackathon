@@ -295,14 +295,30 @@ class MockDataGenerator:
                     # Add some randomness to position
                     lat = current_stop["lat"] + random.uniform(-0.002, 0.002)
                     lng = current_stop["lng"] + random.uniform(-0.002, 0.002)
+                    
+                    # Get next two stops
+                    next_stop_1_index = min(stop_index + 1, len(route["stops"]) - 1)
+                    next_stop_2_index = min(stop_index + 2, len(route["stops"]) - 1)
+                    
+                    next_stop_1 = route["stops"][next_stop_1_index]["name"]
+                    next_stop_2 = route["stops"][next_stop_2_index]["name"]
+                    
+                    # Calculate ETA for next stops (in minutes)
+                    eta_1 = random.randint(2, 8)
+                    eta_2 = random.randint(10, 20)
                 else:
                     lat = route["path"][0]["lat"]
                     lng = route["path"][0]["lng"]
+                    next_stop_1 = "Terminal"
+                    next_stop_2 = "End of Line"
+                    eta_1 = 0
+                    eta_2 = 0
                 
                 vehicle = {
                     "id": f"vehicle_{vehicle_id}",
                     "route_id": route["id"],
                     "route_name": route["name"],
+                    "route_number": route["route_number"],
                     "type": route["type"],
                     "position": {
                         "lat": lat,
@@ -310,10 +326,20 @@ class MockDataGenerator:
                     },
                     "speed": random.randint(20, 60),  # km/h
                     "heading": random.randint(0, 360),
-                    "next_stop": route["stops"][min(stop_index + 1, len(route["stops"]) - 1)]["name"] if route["stops"] else "Terminal",
+                    "next_stops": [
+                        {
+                            "name": next_stop_1,
+                            "eta": eta_1
+                        },
+                        {
+                            "name": next_stop_2,
+                            "eta": eta_2
+                        }
+                    ],
                     "capacity": random.randint(30, 100),
                     "occupancy": random.randint(10, 80),
-                    "last_updated": datetime.now().isoformat()
+                    "last_updated": datetime.now().isoformat(),
+                    "status": random.choice(["On Time", "Delayed 2 min", "On Time", "On Time"])
                 }
                 
                 vehicles.append(vehicle)
@@ -386,6 +412,37 @@ class MockDataGenerator:
             vehicle["speed"] = random.randint(20, 60)
             vehicle["heading"] = (vehicle["heading"] + random.randint(-10, 10)) % 360
             vehicle["occupancy"] = max(5, min(vehicle["capacity"], vehicle["occupancy"] + random.randint(-5, 5)))
+            
+            # Update next stops ETAs (decrease by 1 minute)
+            if "next_stops" in vehicle and len(vehicle["next_stops"]) >= 2:
+                vehicle["next_stops"][0]["eta"] = max(1, vehicle["next_stops"][0]["eta"] - 1)
+                vehicle["next_stops"][1]["eta"] = max(2, vehicle["next_stops"][1]["eta"] - 1)
+                
+                # If first stop ETA is 0, move to next stop
+                if vehicle["next_stops"][0]["eta"] <= 1:
+                    # Find current position in route
+                    for i, stop in enumerate(route["stops"]):
+                        if stop["name"] == vehicle["next_stops"][0]["name"]:
+                            # Move to next stops
+                            next_1_idx = min(i + 1, len(route["stops"]) - 1)
+                            next_2_idx = min(i + 2, len(route["stops"]) - 1)
+                            
+                            vehicle["next_stops"] = [
+                                {
+                                    "name": route["stops"][next_1_idx]["name"],
+                                    "eta": random.randint(3, 8)
+                                },
+                                {
+                                    "name": route["stops"][next_2_idx]["name"],
+                                    "eta": random.randint(10, 18)
+                                }
+                            ]
+                            break
+            
+            # Occasionally update status
+            if random.random() < 0.1:  # 10% chance
+                vehicle["status"] = random.choice(["On Time", "Delayed 2 min", "On Time", "On Time", "On Time"])
+            
             vehicle["last_updated"] = datetime.now().isoformat()
         
         return self.vehicles

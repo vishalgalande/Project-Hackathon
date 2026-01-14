@@ -180,13 +180,24 @@ function displayVehicles() {
             { icon: vehicleIcon(vehicle.type) }
         ).addTo(state.map);
 
-        // Add popup
+        // Add popup with enhanced info
+        const nextStops = vehicle.next_stops || [];
+        const nextStopText = nextStops.length >= 2
+            ? `${nextStops[0].name} (${nextStops[0].eta} min) → ${nextStops[1].name} (${nextStops[1].eta} min)`
+            : vehicle.next_stop || 'Terminal';
+
         marker.bindPopup(`
-            <div style="font-family: Inter, sans-serif;">
-                <strong>${vehicle.route_name}</strong><br>
-                <small>Speed: ${vehicle.speed} km/h</small><br>
-                <small>Next: ${vehicle.next_stop}</small><br>
-                <small>Occupancy: ${vehicle.occupancy}/${vehicle.capacity}</small>
+            <div style="font-family: Inter, sans-serif; min-width: 200px;">
+                <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px; color: #667eea;">
+                    ${vehicle.route_number || 'Route'}
+                </div>
+                <div style="font-weight: 600; margin-bottom: 6px;">${vehicle.route_name}</div>
+                <div style="font-size: 12px; color: #666; line-height: 1.6;">
+                    <div><strong>Speed:</strong> ${vehicle.speed} km/h</div>
+                    <div><strong>Status:</strong> ${vehicle.status || 'On Time'}</div>
+                    <div><strong>Next Stops:</strong><br>${nextStopText}</div>
+                    <div><strong>Occupancy:</strong> ${vehicle.occupancy}/${vehicle.capacity} (${Math.round((vehicle.occupancy / vehicle.capacity) * 100)}%)</div>
+                </div>
             </div>
         `);
 
@@ -328,26 +339,57 @@ function displayRoutePanel(route, vehicles) {
  */
 function createVehicleCard(vehicle) {
     const occupancyPercent = (vehicle.occupancy / vehicle.capacity) * 100;
+    const nextStops = vehicle.next_stops || [];
+    const status = vehicle.status || 'On Time';
+    const statusClass = status.includes('Delayed') ? 'status-delayed' : 'status-ontime';
 
     return `
         <div class="vehicle-card">
             <div class="vehicle-header">
-                <div class="vehicle-id">${vehicle.id.replace('vehicle_', 'Vehicle #')}</div>
-                <div class="vehicle-status">
+                <div class="vehicle-id">
+                    <div style="font-size: 14px; font-weight: 700; color: #667eea;">${vehicle.route_number || 'Route'}</div>
+                    <div style="font-size: 11px; color: var(--text-tertiary);">${vehicle.id.replace('vehicle_', 'Vehicle #')}</div>
+                </div>
+                <div class="vehicle-status ${statusClass}">
                     <span class="status-dot"></span>
-                    <span>Live</span>
+                    <span>${status}</span>
                 </div>
             </div>
             
             <div class="vehicle-info">
-                <div>Speed: ${vehicle.speed} km/h</div>
-                <div>Next Stop: ${vehicle.next_stop}</div>
-                <div>Passengers: ${vehicle.occupancy}/${vehicle.capacity}</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>Speed:</span>
+                    <span style="font-weight: 600;">${vehicle.speed} km/h</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>Passengers:</span>
+                    <span style="font-weight: 600;">${vehicle.occupancy}/${vehicle.capacity}</span>
+                </div>
             </div>
             
             <div class="occupancy-bar">
                 <div class="occupancy-fill" style="width: ${occupancyPercent}%"></div>
             </div>
+            
+            ${nextStops.length >= 2 ? `
+                <div class="next-stops">
+                    <div class="next-stop-title">Next Stops:</div>
+                    <div class="next-stop-item">
+                        <div class="stop-number">1</div>
+                        <div class="stop-details">
+                            <div class="stop-name">${nextStops[0].name}</div>
+                            <div class="stop-eta">${nextStops[0].eta} min</div>
+                        </div>
+                    </div>
+                    <div class="next-stop-item">
+                        <div class="stop-number">2</div>
+                        <div class="stop-details">
+                            <div class="stop-name">${nextStops[1].name}</div>
+                            <div class="stop-eta">${nextStops[1].eta} min</div>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
         </div>
     `;
 }

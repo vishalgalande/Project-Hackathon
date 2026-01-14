@@ -9,45 +9,45 @@
     --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    
+
     /* Solid Colors */
     --primary: #667eea;
     --primary-dark: #5568d3;
     --secondary: #764ba2;
     --accent: #f5576c;
-    
+
     /* Dark Theme Colors */
     --bg-primary: #0f0f23;
     --bg-secondary: #1a1a2e;
     --bg-tertiary: #16213e;
     --bg-glass: rgba(255, 255, 255, 0.05);
     --bg-glass-hover: rgba(255, 255, 255, 0.1);
-    
+
     /* Text Colors */
     --text-primary: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.7);
     --text-tertiary: rgba(255, 255, 255, 0.5);
-    
+
     /* Borders & Shadows */
     --border-color: rgba(255, 255, 255, 0.1);
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
     --shadow-glow: 0 0 20px rgba(102, 126, 234, 0.3);
-    
+
     /* Spacing */
     --spacing-xs: 0.5rem;
     --spacing-sm: 1rem;
     --spacing-md: 1.5rem;
     --spacing-lg: 2rem;
     --spacing-xl: 3rem;
-    
+
     /* Border Radius */
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
     --radius-xl: 24px;
-    
+
     /* Typography */
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-size-xs: 0.75rem;
@@ -56,7 +56,7 @@
     --font-size-lg: 1.125rem;
     --font-size-xl: 1.5rem;
     --font-size-2xl: 2rem;
-    
+
     /* Transitions */
     --transition-fast: 150ms ease;
     --transition-base: 250ms ease;
@@ -73,7 +73,8 @@
     box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
     width: 100%;
     height: 100%;
     overflow: hidden;
@@ -126,7 +127,9 @@ body {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .loading-content h2 {
@@ -348,6 +351,7 @@ body {
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -577,8 +581,13 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .route-header {
@@ -669,8 +678,15 @@ body {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .vehicle-info {
@@ -696,6 +712,108 @@ body {
     transition: width var(--transition-base);
 }
 
+/* Next Stops Section */
+.next-stops {
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--border-color);
+}
+
+.next-stop-title {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.next-stop-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 0.5rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.5rem;
+    transition: all var(--transition-fast);
+}
+
+.next-stop-item:last-child {
+    margin-bottom: 0;
+}
+
+.next-stop-item:hover {
+    background: var(--bg-glass-hover);
+}
+
+.stop-number {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-gradient);
+    border-radius: 50%;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.stop-details {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stop-name {
+    font-size: var(--font-size-xs);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.stop-eta {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    font-weight: 600;
+    background: var(--bg-glass);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+}
+
+/* Status Indicators */
+.status-ontime .status-dot {
+    background: #4ade80;
+}
+
+.status-delayed .status-dot {
+    background: #fbbf24;
+    animation: pulse-warning 1.5s infinite;
+}
+
+@keyframes pulse-warning {
+
+    0%,
+    100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+    }
+
+    50% {
+        opacity: 0.7;
+        box-shadow: 0 0 0 4px rgba(251, 191, 36, 0);
+    }
+}
+
+.status-delayed {
+    color: #fbbf24;
+}
+
+.status-ontime {
+    color: #4ade80;
+}
+
 /* ===================================
    Responsive Design
    =================================== */
@@ -711,25 +829,25 @@ body {
         flex-wrap: wrap;
         gap: var(--spacing-sm);
     }
-    
+
     .logo h1 {
         font-size: var(--font-size-base);
     }
-    
+
     .main-content {
         flex-direction: column;
     }
-    
+
     .side-panel {
         width: 100%;
         max-height: 300px;
     }
-    
+
     .stats-overlay {
         flex-direction: column;
         gap: var(--spacing-xs);
     }
-    
+
     .stat-item {
         min-width: auto;
         padding: var(--spacing-xs) var(--spacing-sm);
@@ -740,16 +858,16 @@ body {
     .search-container {
         padding: var(--spacing-sm);
     }
-    
+
     .main-content {
         padding: 0 var(--spacing-sm) var(--spacing-sm);
     }
-    
+
     .map-controls {
         top: var(--spacing-sm);
         right: var(--spacing-sm);
     }
-    
+
     .stats-overlay {
         bottom: var(--spacing-sm);
         left: var(--spacing-sm);
