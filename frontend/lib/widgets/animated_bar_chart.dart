@@ -10,17 +10,17 @@ class AnimatedBarChart extends StatefulWidget {
   final Duration delay;
   final bool showPercentage;
   final IconData? icon;
-  
+
   const AnimatedBarChart({
     super.key,
     required this.label,
     required this.value,
-    this.color = AppColors.cyberCyan,
+    this.color = AppColors.primary,
     this.delay = Duration.zero,
     this.showPercentage = true,
     this.icon,
   });
-  
+
   @override
   State<AnimatedBarChart> createState() => _AnimatedBarChartState();
 }
@@ -29,7 +29,7 @@ class _AnimatedBarChartState extends State<AnimatedBarChart>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -37,7 +37,7 @@ class _AnimatedBarChartState extends State<AnimatedBarChart>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-    
+
     _animation = Tween<double>(
       begin: 0,
       end: widget.value / 100,
@@ -45,19 +45,19 @@ class _AnimatedBarChartState extends State<AnimatedBarChart>
       parent: _controller,
       curve: Curves.easeOutCubic,
     ));
-    
+
     // Start with delay
     Future.delayed(widget.delay, () {
       if (mounted) _controller.forward();
     });
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -104,7 +104,7 @@ class _AnimatedBarChartState extends State<AnimatedBarChart>
               ],
             ),
             const SizedBox(height: 8),
-            
+
             // Bar container
             Container(
               height: 8,
@@ -136,11 +136,14 @@ class _AnimatedBarChartState extends State<AnimatedBarChart>
                       ),
                     ),
                   ),
-                  
+
                   // Scanline effect
                   if (_controller.isAnimating)
                     Positioned(
-                      left: _animation.value * MediaQuery.of(context).size.width * 0.7 - 20,
+                      left: _animation.value *
+                              MediaQuery.of(context).size.width *
+                              0.7 -
+                          20,
                       top: 0,
                       bottom: 0,
                       child: Container(
@@ -172,15 +175,15 @@ class StatCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
-  
+
   const StatCard({
     super.key,
     required this.label,
     required this.value,
     required this.icon,
-    this.color = AppColors.cyberCyan,
+    this.color = AppColors.primary,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../app/theme.dart';
 import '../app/providers.dart';
@@ -9,23 +8,23 @@ import '../models/zone.dart';
 /// Page 3: Zone Details with Feedback Reporting
 class IntelPage extends ConsumerWidget {
   final String zoneId;
-  
+
   const IntelPage({super.key, required this.zoneId});
-  
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final zone = ref.watch(selectedZoneProvider(zoneId));
-    
+
     if (zone == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Zone Details')),
         body: const Center(child: Text('Zone not found')),
       );
     }
-    
+
     final zoneColor = zone.type.zoneColor;
     final isUserReportedDanger = zone.negativeFeedbackCount > 10;
-    
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: CustomScrollView(
@@ -62,7 +61,7 @@ class IntelPage extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  
+
                   // Radial Safety Score
                   Center(
                     child: Column(
@@ -88,7 +87,11 @@ class IntelPage extends ConsumerWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  zone.type == 'safe' ? '95' : zone.type == 'caution' ? '60' : '20',
+                                  zone.type == 'safe'
+                                      ? '95'
+                                      : zone.type == 'caution'
+                                          ? '60'
+                                          : '20',
                                   style: TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.w900,
@@ -106,10 +109,13 @@ class IntelPage extends ConsumerWidget {
                               ],
                             ),
                           ),
-                        ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
+                        )
+                            .animate()
+                            .scale(duration: 600.ms, curve: Curves.easeOutBack),
                         const SizedBox(height: 16),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
                             color: zoneColor,
                             borderRadius: BorderRadius.circular(30),
@@ -123,7 +129,10 @@ class IntelPage extends ConsumerWidget {
                               letterSpacing: 1,
                             ),
                           ),
-                        ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
+                        )
+                            .animate()
+                            .fadeIn(delay: 300.ms)
+                            .slideY(begin: 0.2, end: 0),
                       ],
                     ),
                   ),
@@ -131,7 +140,7 @@ class IntelPage extends ConsumerWidget {
               ),
             ),
           ),
-          
+
           // Content
           SliverToBoxAdapter(
             child: Padding(
@@ -152,7 +161,8 @@ class IntelPage extends ConsumerWidget {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.report_gmailerrorred_rounded, color: Colors.red),
+                          const Icon(Icons.report_gmailerrorred_rounded,
+                              color: Colors.red),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Column(
@@ -177,7 +187,10 @@ class IntelPage extends ConsumerWidget {
                           ),
                         ],
                       ),
-                    ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.02, 1.02), duration: 600.ms),
+                    ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
+                        begin: const Offset(1, 1),
+                        end: const Offset(1.02, 1.02),
+                        duration: 600.ms),
 
                   // Report Button (Primary Action)
                   SizedBox(
@@ -197,7 +210,7 @@ class IntelPage extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 12),
                   Center(
                     child: Text(
@@ -208,13 +221,13 @@ class IntelPage extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 32),
 
                   // Info Cards
                   _buildSectionTitle('Zone Analysis'),
                   const SizedBox(height: 16),
-                  
+
                   // Bento Grid
                   Row(
                     children: [
@@ -224,7 +237,9 @@ class IntelPage extends ConsumerWidget {
                           value: '${zone.crimeRate}',
                           subtitle: 'Lower is better',
                           icon: Icons.shield_outlined,
-                          color: zone.crimeRate < 30 ? Colors.green : Colors.orange,
+                          color: zone.crimeRate < 30
+                              ? Colors.green
+                              : Colors.orange,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -234,12 +249,14 @@ class IntelPage extends ConsumerWidget {
                           value: '${zone.lightingLevel}%',
                           subtitle: 'Street light coverage',
                           icon: Icons.lightbulb_outline,
-                          color: zone.lightingLevel > 80 ? Colors.green : Colors.red,
+                          color: zone.lightingLevel > 80
+                              ? Colors.green
+                              : Colors.red,
                         ),
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 32),
                   _buildSectionTitle('Description'),
                   const SizedBox(height: 12),
@@ -251,13 +268,14 @@ class IntelPage extends ConsumerWidget {
                       color: Colors.grey.shade700,
                     ),
                   ),
-                  
+
                   // Safety Tips
                   if (zone.warnings.isNotEmpty) ...[
                     const SizedBox(height: 32),
                     _buildSectionTitle('Advisories'),
                     const SizedBox(height: 16),
-                    ...zone.warnings.map((w) => _buildAdvisoryItem(w, zoneColor)),
+                    ...zone.warnings
+                        .map((w) => _buildAdvisoryItem(w, zoneColor)),
                   ]
                 ],
               ),
@@ -267,7 +285,7 @@ class IntelPage extends ConsumerWidget {
       ),
     );
   }
-  
+
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
@@ -278,7 +296,7 @@ class IntelPage extends ConsumerWidget {
       ),
     );
   }
-  
+
   Widget _buildAdvisoryItem(String warning, Color color) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -334,20 +352,23 @@ class IntelPage extends ConsumerWidget {
               style: TextStyle(color: Colors.grey.shade600),
             ),
             const SizedBox(height: 24),
-            
-            _buildReportOption(context, ref, zone, 'Theft / Pickpocketing', Icons.run_circle_outlined),
-            _buildReportOption(context, ref, zone, 'Harassment', Icons.record_voice_over_outlined),
-            _buildReportOption(context, ref, zone, 'Poor Lighting', Icons.lightbulb_outline),
-            _buildReportOption(context, ref, zone, 'Suspicious Activity', Icons.visibility_outlined),
-            
+            _buildReportOption(context, ref, zone, 'Theft / Pickpocketing',
+                Icons.run_circle_outlined),
+            _buildReportOption(context, ref, zone, 'Harassment',
+                Icons.record_voice_over_outlined),
+            _buildReportOption(
+                context, ref, zone, 'Poor Lighting', Icons.lightbulb_outline),
+            _buildReportOption(context, ref, zone, 'Suspicious Activity',
+                Icons.visibility_outlined),
             const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
-  
-  Widget _buildReportOption(BuildContext context, WidgetRef ref, Zone zone, String title, IconData icon) {
+
+  Widget _buildReportOption(BuildContext context, WidgetRef ref, Zone zone,
+      String title, IconData icon) {
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
@@ -361,15 +382,16 @@ class IntelPage extends ConsumerWidget {
       onTap: () {
         // Increment feedback (In a real app, this would be an API call)
         final newCount = zone.negativeFeedbackCount + 1;
-        
+
         // Simulating the update by locally modifying the mock list via provider
         // (Just showing success message for this demo)
-        
+
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Report submitted! Total reports: $newCount'),
-            backgroundColor: newCount > 10 ? AppColors.dangerZone : Colors.black87,
+            backgroundColor:
+                newCount > 10 ? AppColors.dangerZone : Colors.black87,
             behavior: SnackBarBehavior.floating,
           ),
         );

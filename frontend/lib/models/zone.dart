@@ -39,15 +39,34 @@ class Zone extends Equatable {
 
   String get threatLevel {
     if (negativeFeedbackCount > 10) return 'User Reported Risk';
-    
+
     switch (_baseType.toLowerCase()) {
-      case 'danger': return 'High Risk';
-      case 'caution': return 'Moderate Risk';
-      case 'safe': return 'Low Risk';
-      default: return 'Unknown';
+      case 'danger':
+        return 'High Risk';
+      case 'caution':
+        return 'Moderate Risk';
+      case 'safe':
+        return 'Low Risk';
+      default:
+        return 'Unknown';
     }
   }
-  
+
+  /// Pulse animation speed based on zone type
+  /// Danger zones pulse faster to draw attention
+  Duration get pulseSpeed {
+    switch (type.toLowerCase()) {
+      case 'danger':
+        return const Duration(milliseconds: 800);
+      case 'caution':
+        return const Duration(milliseconds: 1200);
+      case 'safe':
+        return const Duration(milliseconds: 1500);
+      default:
+        return const Duration(milliseconds: 1000);
+    }
+  }
+
   // Create a copy with updated feedback
   Zone copyWithFeedback(int newCount) {
     return Zone(
@@ -67,7 +86,15 @@ class Zone extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, name, _baseType, centerLat, centerLng, radius, negativeFeedbackCount];
+  List<Object?> get props => [
+        id,
+        name,
+        _baseType,
+        centerLat,
+        centerLng,
+        radius,
+        negativeFeedbackCount
+      ];
 }
 
 /// Expanded Mock zones including NCR (Gurgaon, Noida)
@@ -99,8 +126,8 @@ class MockZones {
       lightingLevel: 80,
       recentIncidents: 3,
       description: 'Major mall mile. Heavy traffic and crowding.',
-       warnings: ['Traffic congestion'],
-       negativeFeedbackCount: 8, // Close to danger threshold
+      warnings: ['Traffic congestion'],
+      negativeFeedbackCount: 8, // Close to danger threshold
     ),
     Zone(
       id: 'ncr_ggn_3',
@@ -142,8 +169,8 @@ class MockZones {
       crimeRate: 8,
       lightingLevel: 85,
       recentIncidents: 1,
-       description: 'Metro hub and park area.',
-       warnings: [],
+      description: 'Metro hub and park area.',
+      warnings: [],
     ),
 
     // --- NORTH DELHI (Red/Amber) ---
@@ -172,9 +199,9 @@ class MockZones {
       lightingLevel: 55,
       recentIncidents: 4,
       description: 'Transit hub area.',
-       warnings: [],
+      warnings: [],
     ),
-     Zone(
+    Zone(
       id: 'd_north_3',
       name: 'Sadar Bazar',
       type: 'danger',
@@ -320,10 +347,10 @@ class MockZones {
       crimeRate: 4,
       lightingLevel: 85,
       recentIncidents: 0,
-       description: 'Public park.',
+      description: 'Public park.',
       warnings: [],
     ),
-     Zone(
+    Zone(
       id: 'd_south_3',
       name: 'Chanakyapuri',
       type: 'safe',
@@ -333,10 +360,10 @@ class MockZones {
       crimeRate: 1,
       lightingLevel: 100,
       recentIncidents: 0,
-       description: 'Diplomatic enclave.',
+      description: 'Diplomatic enclave.',
       warnings: [],
     ),
-     Zone(
+    Zone(
       id: 'd_south_4',
       name: 'Hauz Khas Village',
       type: 'caution',
@@ -346,12 +373,12 @@ class MockZones {
       crimeRate: 25,
       lightingLevel: 70,
       recentIncidents: 3,
-       description: 'Nightlife hub.',
+      description: 'Nightlife hub.',
       warnings: ['Drink responsibly'],
     ),
-    
+
     // --- EAST DELHI (DANGER/CAUTION) ---
-     Zone(
+    Zone(
       id: 'd_east_1',
       name: 'Seelampur',
       type: 'danger',
@@ -361,7 +388,7 @@ class MockZones {
       crimeRate: 70,
       lightingLevel: 40,
       recentIncidents: 15,
-       description: 'Dense area.',
+      description: 'Dense area.',
       warnings: ['Local guide required'],
     ),
     Zone(
@@ -374,7 +401,7 @@ class MockZones {
       crimeRate: 35,
       lightingLevel: 65,
       recentIncidents: 4,
-       description: 'Student hub.',
+      description: 'Student hub.',
       warnings: [],
     ),
     // --- WEST DELHI (Filling empty areas) ---

@@ -1,39 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'app/router.dart';
-import 'app/theme.dart';
-
-/// SAFE_PROTOCOL
-/// Smart Tourist Safety System
-/// 
-/// A cyberpunk-themed Flutter Web app for tourist safety
-/// with real-time GPS tracking and danger zone alerts.
-
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  runApp(
-    const ProviderScope(
-      child: SafeProtocolApp(),
-    ),
-  );
-}
-
-class SafeProtocolApp extends StatelessWidget {
-  const SafeProtocolApp({super.key});
-  
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'SAFE_PROTOCOL',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      routerConfig: appRouter,
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'features/landing_page.dart';
 import 'features/auth/auth_dialogs.dart';
+import 'pages/command_center_page.dart';
+import 'pages/intel_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,20 +26,49 @@ void main() async {
       );
     }
   } else {
-    // For Android/iOS, we expect google-services.json / GoogleService-Info.plist
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp();
     }
   }
-  runApp(const SafeTravelApp());
+
+  runApp(
+    const ProviderScope(
+      child: SafeTravelApp(),
+    ),
+  );
 }
+
+// GoRouter configuration
+final GoRouter _router = GoRouter(
+  initialLocation: '/',
+  routes: [
+    GoRoute(
+      path: '/',
+      name: 'home',
+      builder: (context, state) => const LandingPage(),
+    ),
+    GoRoute(
+      path: '/geofencing',
+      name: 'geofencing',
+      builder: (context, state) => const CommandCenterPage(),
+    ),
+    GoRoute(
+      path: '/intel/:zoneId',
+      name: 'intel',
+      builder: (context, state) {
+        final zoneId = state.pathParameters['zoneId'] ?? '';
+        return IntelPage(zoneId: zoneId);
+      },
+    ),
+  ],
+);
 
 class SafeTravelApp extends StatelessWidget {
   const SafeTravelApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'SafeTravel India',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -81,7 +84,7 @@ class SafeTravelApp extends StatelessWidget {
           ThemeData.dark().textTheme,
         ),
       ),
-      home: const LandingPage(),
+      routerConfig: _router,
     );
   }
 }
