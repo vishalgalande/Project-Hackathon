@@ -15,7 +15,7 @@ const state = {
         routes: []
     },
     updateInterval: null,
-    showVehicles: true
+    showVehicles: true // Vehicles visible by default
 };
 
 // Initialize application when DOM is loaded
@@ -41,6 +41,9 @@ async function initializeApp() {
     // Load routes for India
     await loadRoutes();
 
+    // Activate traffic button by default
+    document.getElementById('toggle-traffic').classList.add('active');
+
     // Hide loading screen
     setTimeout(() => {
         document.getElementById('loading-screen').classList.add('hidden');
@@ -51,9 +54,12 @@ async function initializeApp() {
  * Initialize Leaflet map
  */
 function initializeMap() {
-    // Create map centered on India
+    // Create map centered on India with interactive options
     state.map = L.map('map', {
-        zoomControl: false
+        zoomControl: false,
+        zoomAnimation: true,
+        fadeAnimation: true,
+        markerZoomAnimation: true
     }).setView([20.5937, 78.9629], 5); // Center of India
 
     // Add tile layer (OpenStreetMap)
@@ -66,6 +72,13 @@ function initializeMap() {
     // Add zoom control to bottom right
     L.control.zoom({
         position: 'bottomright'
+    }).addTo(state.map);
+
+    // Add scale control
+    L.control.scale({
+        position: 'bottomleft',
+        metric: true,
+        imperial: false
     }).addTo(state.map);
 }
 
@@ -117,7 +130,7 @@ function displayVehicles() {
 
     if (!state.showVehicles) return;
 
-    // Create custom icon for vehicles
+    // Create custom icon for vehicles with animation
     const vehicleIcon = (type) => {
         const colors = {
             'Bus': '#667eea',
@@ -126,22 +139,32 @@ function displayVehicles() {
             'Light Rail': '#fbbf24'
         };
 
+        const icons = {
+            'Bus': '🚌',
+            'Metro': '🚇',
+            'Tram': '🚊',
+            'Light Rail': '🚈'
+        };
+
         return L.divIcon({
             className: 'vehicle-marker',
-            html: `<div style="
-                width: 24px;
-                height: 24px;
+            html: `<div class="vehicle-icon-wrapper" style="
+                width: 32px;
+                height: 32px;
                 background: ${colors[type] || '#667eea'};
                 border: 3px solid white;
                 border-radius: 50%;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 12px;
-            ">🚌</div>`,
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
+                font-size: 16px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                animation: pulse 2s infinite;
+            ">${icons[type] || '🚌'}</div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
         });
     };
 
@@ -149,8 +172,21 @@ function displayVehicles() {
     state.vehicles.forEach(vehicle => {
         const marker = L.marker(
             [vehicle.position.lat, vehicle.position.lng],
-            { icon: vehicleIcon(vehicle.type) }
+            {
+                icon: vehicleIcon(vehicle.type),
+                riseOnHover: true
+            }
         ).addTo(state.map);
+
+        // Add tooltip on hover
+        marker.bindTooltip(
+            `<strong>${vehicle.route_number}</strong><br>${vehicle.route_name}`,
+            {
+                permanent: false,
+                direction: 'top',
+                offset: [0, -16]
+            }
+        );
 
         // Add popup with enhanced info
         const nextStops = vehicle.next_stops || [];
@@ -159,16 +195,16 @@ function displayVehicles() {
             : vehicle.next_stop || 'Terminal';
 
         marker.bindPopup(`
-            <div style="font-family: Inter, sans-serif; min-width: 200px;">
-                <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px; color: #667eea;">
+            <div style="font-family: Inter, sans-serif; min-width: 220px;">
+                <div style="font-weight: 700; font-size: 16px; margin-bottom: 8px; color: #667eea;">
                     ${vehicle.route_number || 'Route'}
                 </div>
-                <div style="font-weight: 600; margin-bottom: 6px;">${vehicle.route_name}</div>
-                <div style="font-size: 12px; color: #666; line-height: 1.6;">
-                    <div><strong>Speed:</strong> ${vehicle.speed} km/h</div>
-                    <div><strong>Status:</strong> ${vehicle.status || 'On Time'}</div>
-                    <div><strong>Next Stops:</strong><br>${nextStopText}</div>
-                    <div><strong>Occupancy:</strong> ${vehicle.occupancy}/${vehicle.capacity} (${Math.round((vehicle.occupancy / vehicle.capacity) * 100)}%)</div>
+                <div style="font-weight: 600; margin-bottom: 8px; font-size: 14px;">${vehicle.route_name}</div>
+                <div style="font-size: 13px; color: #333; line-height: 1.8;">
+                    <div>🚀 <strong>Speed:</strong> ${vehicle.speed} km/h</div>
+                    <div>⏱️ <strong>Status:</strong> <span style="color: ${vehicle.status && vehicle.status.includes('Delayed') ? '#f5576c' : '#4ade80'};">${vehicle.status || 'On Time'}</span></div>
+                    <div>📍 <strong>Next Stops:</strong><br><span style="margin-left: 20px;">${nextStopText}</span></div>
+                    <div>👥 <strong>Occupancy:</strong> ${vehicle.occupancy}/${vehicle.capacity} (${Math.round((vehicle.occupancy / vehicle.capacity) * 100)}%)</div>
                 </div>
             </div>
         `);
@@ -176,6 +212,11 @@ function displayVehicles() {
         // Click to view route details
         marker.on('click', () => {
             loadRouteDetails(vehicle.route_id);
+        });
+
+        // Hover effect
+        marker.on('mouseover', function () {
+            this.openTooltip();
         });
 
         state.markers.vehicles.push(marker);
