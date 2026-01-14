@@ -88,3 +88,16 @@ If you can't merge because of conflicts:
 - `git status` : Check what branch you are on and what files changed.
 - `git log` : See history of commits.
 - `git branch` : Show local branches.
+
+## 5. Releasing Versions (Milestones)
+When we reach a big goal (like "MVP Complete"), we should **Tag** the version.
+
+1.  **Create a Tag**:
+    ```bash
+    git tag v1.0 -m "First working release"
+    ```
+2.  **Push the Tag to GitHub**:
+    ```bash
+    git push origin v1.0
+    ```
+This creates a "Release" on our GitHub page that we can easily download later.
