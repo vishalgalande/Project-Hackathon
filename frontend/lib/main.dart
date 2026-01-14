@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
-import 'features/home_screen.dart';
-import 'features/auth/login_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'features/landing_page.dart';
+import 'features/auth/auth_dialogs.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,32 +23,35 @@ void main() async {
     }
   } else {
     // For Android/iOS, we expect google-services.json / GoogleService-Info.plist
-    // But we should also check to avoid errors on hot restart if platform implementation differs
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp();
     }
   }
-  runApp(const TourismApp());
+  runApp(const SafeTravelApp());
 }
 
-class TourismApp extends StatelessWidget {
-  const TourismApp({super.key});
+class SafeTravelApp extends StatelessWidget {
+  const SafeTravelApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Tourism Hackathon App',
+      title: 'SafeTravel India',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        fontFamily: 'Poppins', 
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1a2a6c)),
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: AppColors.bgDark,
+        colorScheme: ColorScheme.dark(
+          primary: AppColors.primary,
+          secondary: AppColors.accent,
+          surface: AppColors.bgCard,
+        ),
+        textTheme: GoogleFonts.interTextTheme(
+          ThemeData.dark().textTheme,
+        ),
       ),
-      initialRoute: '/login',
-      routes: {
-        '/': (context) => const HomeScreen(),
-        '/login': (context) => const LoginScreen(),
-      },
+      home: const LandingPage(),
     );
   }
 }
