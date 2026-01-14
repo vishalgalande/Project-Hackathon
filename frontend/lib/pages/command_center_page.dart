@@ -18,8 +18,9 @@ class CommandCenterPage extends ConsumerStatefulWidget {
 
 class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   final MapController _mapController = MapController();
-  final LatLng _initialCenter = const LatLng(28.6300, 77.2200);
-  final double _initialZoom = 13.0;
+  // Center of India (approximately)
+  final LatLng _initialCenter = const LatLng(20.5937, 78.9629);
+  final double _initialZoom = 5.0; // Zoom out to see all India
   bool _isDarkMode = false; // Add state for map style
 
   @override
@@ -54,13 +55,10 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
             options: MapOptions(
               initialCenter: _initialCenter,
               initialZoom: _initialZoom,
-              minZoom: 11,
+              minZoom: 4, // Allow zoom out to see all India
               maxZoom: 18,
-              cameraConstraint: CameraConstraint.contain(
-                bounds: LatLngBounds(
-                  const LatLng(28.45, 76.9),
-                  const LatLng(28.80, 77.5),
-                ),
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all, // Enable all gestures including pinch zoom
               ),
               onTap: (_, __) => {},
             ),
@@ -155,7 +153,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                     Row(
                       children: [
                         _buildHeaderAction(Icons.my_location,
-                            () => _mapController.move(_initialCenter, 14)),
+                            () => _mapController.move(_initialCenter, 5)),
                         const SizedBox(width: 12),
                         _buildHeaderAction(
                             _isDarkMode
@@ -170,6 +168,83 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                   ],
                 ),
               ),
+            ),
+          ),
+
+          // Zoom Controls
+          Positioned(
+            right: 16,
+            bottom: 200,
+            child: Column(
+              children: [
+                // Zoom In Button
+                GestureDetector(
+                  onTap: () {
+                    final currentZoom = _mapController.camera.zoom;
+                    if (currentZoom < 18) {
+                      _mapController.move(
+                        _mapController.camera.center,
+                        currentZoom + 1,
+                      );
+                    }
+                  },
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: _isDarkMode ? Colors.black87 : Colors.white,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.add,
+                      color: _isDarkMode ? Colors.white : Colors.black87,
+                      size: 24,
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 44,
+                  height: 1,
+                  color: Colors.grey.shade300,
+                ),
+                // Zoom Out Button
+                GestureDetector(
+                  onTap: () {
+                    final currentZoom = _mapController.camera.zoom;
+                    if (currentZoom > 4) {
+                      _mapController.move(
+                        _mapController.camera.center,
+                        currentZoom - 1,
+                      );
+                    }
+                  },
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: _isDarkMode ? Colors.black87 : Colors.white,
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.remove,
+                      color: _isDarkMode ? Colors.white : Colors.black87,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
