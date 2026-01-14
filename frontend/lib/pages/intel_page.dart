@@ -369,16 +369,7 @@ class IntelPage extends ConsumerWidget {
 
   Widget _buildReportOption(BuildContext context, WidgetRef ref, Zone zone,
       String title, IconData icon) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: Colors.black87),
-      ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+    return InkWell(
       onTap: () {
         // Increment feedback (In a real app, this would be an API call)
         final newCount = zone.negativeFeedbackCount + 1;
@@ -396,9 +387,38 @@ class IntelPage extends ConsumerWidget {
           ),
         );
       },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: Colors.black87, size: 22),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
+          ],
+        ),
+      ),
     );
   }
 }
+
 
 class _ModernStatCard extends StatelessWidget {
   final String title;

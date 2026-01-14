@@ -375,32 +375,95 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                           BoxShadow(color: Colors.black12, blurRadius: 4),
                         ],
                       ),
-                      child: ListTile(
+                      child: InkWell(
                         onTap: () => _showZoneDetails(zone),
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: zone.type.zoneColor.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            zone.type == 'danger'
-                                ? Icons.warning_amber_rounded
-                                : zone.type == 'caution'
-                                    ? Icons.priority_high_rounded
-                                    : Icons.verified_user_rounded,
-                            color: zone.type.zoneColor,
-                            size: 20,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              // Leading icon
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: zone.type.zoneColor.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  zone.type == 'danger'
+                                      ? Icons.warning_amber_rounded
+                                      : zone.type == 'caution'
+                                          ? Icons.priority_high_rounded
+                                          : Icons.verified_user_rounded,
+                                  color: zone.type.zoneColor,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Content
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      zone.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      zone.description,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                    // Warning tags
+                                    if (zone.warnings.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 4,
+                                        children: zone.warnings.map((warning) =>
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: zone.type.zoneColor.withOpacity(0.15),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: zone.type.zoneColor.withOpacity(0.3),
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              warning,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                                color: zone.type.zoneColor,
+                                              ),
+                                            ),
+                                          ),
+                                        ).toList(),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              // Trailing icon
+                              const Icon(Icons.chevron_right,
+                                  size: 20, color: Colors.grey),
+                            ],
                           ),
                         ),
-                        title: Text(
-                          zone.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(zone.description,
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
-                        trailing: const Icon(Icons.chevron_right,
-                            size: 20, color: Colors.grey),
                       ),
                     )),
 
