@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'auth/auth_dialogs.dart';
 
 class LandingPage extends StatefulWidget {
@@ -96,14 +97,9 @@ class _LandingPageState extends State<LandingPage> {
                 _NavLink(text: 'Home', isActive: true, onTap: () {}),
                 const SizedBox(width: 40),
                 _NavLink(
-                  text: 'Safety Map',
+                  text: 'Safety Zones',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Safety Map feature - Navigate to web version'),
-                      ),
-                    );
+                    context.go('/geofencing');
                   },
                 ),
                 const SizedBox(width: 40),
@@ -305,9 +301,7 @@ class _LandingPageState extends State<LandingPage> {
             children: [
               ElevatedButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Navigate to Safety Map')),
-                  );
+                  context.go('/geofencing');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -319,7 +313,7 @@ class _LandingPageState extends State<LandingPage> {
                   ),
                 ),
                 child: const Text(
-                  'Explore Safety Map',
+                  'Explore Safety Zones',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -387,7 +381,7 @@ class _LandingPageState extends State<LandingPage> {
                   _FeatureCard(
                     icon: '🗺️',
                     iconBgColor: AppColors.success.withOpacity(0.15),
-                    title: 'Safety Zone Map',
+                    title: 'Safety Zones (Geofencing)',
                     description:
                         "View real-time safety ratings for areas across Delhi. Community-powered zones show you where it's safe to go, where to be cautious, and areas to avoid.",
                     linkText: 'Open Map',
@@ -395,7 +389,9 @@ class _LandingPageState extends State<LandingPage> {
                     width: isWide
                         ? (constraints.maxWidth - 24) / 2
                         : constraints.maxWidth,
-                    onTap: () {},
+                    onTap: () {
+                      context.go('/geofencing');
+                    },
                   ),
                   _FeatureCard(
                     icon: '🚌',

@@ -8,12 +8,17 @@ class AppColors {
   static const Color background = Color(0xFFF5F5F5);
   static const Color surface = Colors.white;
   static const Color primary = Color(0xFF2196F3);
-  
+
   // Zone colors (matching the reference image)
-  static const Color dangerZone = Color(0xFFE53935);    // Red
-  static const Color cautionZone = Color(0xFFFFB300);   // Yellow/Amber
-  static const Color safeZone = Color(0xFF43A047);      // Green
-  
+  static const Color dangerZone = Color(0xFFE53935); // Red
+  static const Color cautionZone = Color(0xFFFFB300); // Yellow/Amber
+  static const Color safeZone = Color(0xFF43A047); // Green
+
+  // Cyberpunk accent colors (for GlitchButton widget)
+  static const Color cyberCyan = Color(0xFF00FFFF);
+  static const Color neonCrimson = Color(0xFFFF003C);
+  static const Color voidBlack = Color(0xFF0A0A0F);
+
   // Text
   static const Color textPrimary = Color(0xFF212121);
   static const Color textSecondary = Color(0xFF757575);

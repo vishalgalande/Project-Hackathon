@@ -10,16 +10,16 @@ class GlitchButton extends StatefulWidget {
   final Color color;
   final double width;
   final double height;
-  
+
   const GlitchButton({
     super.key,
     required this.text,
     required this.onPressed,
-    this.color = AppColors.cyberCyan,
+    this.color = const Color(0xFF00FFFF), // AppColors.cyberCyan
     this.width = 280,
     this.height = 60,
   });
-  
+
   @override
   State<GlitchButton> createState() => _GlitchButtonState();
 }
@@ -30,7 +30,7 @@ class _GlitchButtonState extends State<GlitchButton>
   bool _isPressed = false;
   late AnimationController _glitchController;
   late AnimationController _scanController;
-  
+
   @override
   void initState() {
     super.initState();
@@ -43,20 +43,20 @@ class _GlitchButtonState extends State<GlitchButton>
       duration: const Duration(milliseconds: 1500),
     )..repeat();
   }
-  
+
   @override
   void dispose() {
     _glitchController.dispose();
     _scanController.dispose();
     super.dispose();
   }
-  
+
   void _triggerGlitch() {
     _glitchController.forward().then((_) {
       _glitchController.reverse();
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -78,7 +78,7 @@ class _GlitchButtonState extends State<GlitchButton>
           builder: (context, child) {
             final glitchOffset = _glitchController.value * 4;
             final isGlitching = _glitchController.isAnimating;
-            
+
             return Transform.scale(
               scale: _isPressed ? 0.98 : 1.0,
               child: Container(
@@ -111,7 +111,7 @@ class _GlitchButtonState extends State<GlitchButton>
                             : Colors.transparent,
                       ),
                     ),
-                    
+
                     // Scan line
                     if (_isHovered)
                       Positioned(
@@ -131,7 +131,7 @@ class _GlitchButtonState extends State<GlitchButton>
                           ),
                         ),
                       ),
-                    
+
                     // Main text
                     Center(
                       child: Text(
@@ -145,7 +145,7 @@ class _GlitchButtonState extends State<GlitchButton>
                         ),
                       ),
                     ),
-                    
+
                     // Glitch layer 1 (Red offset)
                     if (isGlitching)
                       Positioned(
@@ -165,7 +165,8 @@ class _GlitchButtonState extends State<GlitchButton>
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 3,
-                                    color: AppColors.neonCrimson.withOpacity(0.7),
+                                    color:
+                                        AppColors.neonCrimson.withOpacity(0.7),
                                   ),
                                 ),
                               ),
@@ -173,7 +174,7 @@ class _GlitchButtonState extends State<GlitchButton>
                           ),
                         ),
                       ),
-                    
+
                     // Glitch layer 2 (Cyan offset)
                     if (isGlitching)
                       Positioned(
@@ -201,7 +202,7 @@ class _GlitchButtonState extends State<GlitchButton>
                           ),
                         ),
                       ),
-                    
+
                     // Corner brackets
                     Positioned(
                       top: 4,
@@ -248,9 +249,9 @@ class _GlitchButtonState extends State<GlitchButton>
 
 class _CornerBracket extends StatelessWidget {
   final Color color;
-  
+
   const _CornerBracket({required this.color});
-  
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -265,24 +266,24 @@ class _CornerBracket extends StatelessWidget {
 
 class _BracketPainter extends CustomPainter {
   final Color color;
-  
+
   _BracketPainter({required this.color});
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
-    
+
     final path = Path()
       ..moveTo(0, size.height)
       ..lineTo(0, 0)
       ..lineTo(size.width, 0);
-    
+
     canvas.drawPath(path, paint);
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
