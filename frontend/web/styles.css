@@ -1128,6 +1128,17 @@ body {
     color: #f59e0b;
 }
 
+/* Traffic Item Interactive */
+.traffic-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.traffic-item:hover {
+    background: rgba(0, 0, 0, 0.03);
+    transform: translateX(4px);
+}
+
 .close-report-btn {
     background: none;
     border: none;

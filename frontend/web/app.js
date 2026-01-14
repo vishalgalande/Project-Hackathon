@@ -445,10 +445,16 @@ function createVehicleCard(vehicle) {
 function openTrafficReport() {
     if (document.querySelector('.traffic-report-panel')) return;
 
-    const crowded = state.vehicles.filter(v => (v.occupancy / v.capacity) > 0.7)
+    // Filter vehicles visible in current map view
+    const bounds = state.map.getBounds();
+    const visibleVehicles = state.vehicles.filter(v =>
+        bounds.contains([v.position.lat, v.position.lng])
+    );
+
+    const crowded = visibleVehicles.filter(v => (v.occupancy / v.capacity) > 0.7)
         .sort((a, b) => (b.occupancy / b.capacity) - (a.occupancy / a.capacity)).slice(0, 5);
 
-    const delayed = state.vehicles.filter(v => v.status && v.status.includes('Delayed')).slice(0, 5);
+    const delayed = visibleVehicles.filter(v => v.status && v.status.includes('Delayed')).slice(0, 5);
 
     const renderItem = (v, type) => {
         const isCrowded = type === 'crowded';
@@ -457,7 +463,7 @@ function openTrafficReport() {
         const badgeText = isCrowded ? `${Math.round((v.occupancy / v.capacity) * 100)}% Full` : v.status;
 
         return `
-            <div class="traffic-item ${cssClass}">
+            <div class="traffic-item ${cssClass}" onclick="panToVehicle('${v.id}')">
                 <div class="traffic-info">
                     <div class="traffic-route">${v.route_number || v.route_name}</div>
                     <div class="traffic-details"><span>#${v.id.split('_')[1]} • ${v.speed} km/h</span></div>
@@ -473,22 +479,43 @@ function openTrafficReport() {
         <div class="traffic-report-panel">
             <div class="traffic-report-header">
                 <h2>📊 Live Traffic Report</h2>
+                <div style="font-size:12px; opacity:0.7; margin-top:2px;">Visible Region Only</div>
                 <button class="close-report-btn" onclick="closeTrafficReport()">✕</button>
             </div>
             <div class="traffic-report-content">
                 <div class="traffic-section">
                     <h3>⚠️ Crowded Routes (>70%)</h3>
-                    ${crowded.length ? crowded.map(v => renderItem(v, 'crowded')).join('') : '<p style="text-align:center;color:#888">No crowded vehicles</p>'}
+                    ${crowded.length ? crowded.map(v => renderItem(v, 'crowded')).join('') : '<p style="text-align:center;color:#888">No crowded vehicles in view</p>'}
                 </div>
                 <div class="traffic-section">
                     <h3>⏱️ Delays</h3>
-                    ${delayed.length ? delayed.map(v => renderItem(v, 'delayed')).join('') : '<p style="text-align:center;color:#888">No reported delays</p>'}
+                    ${delayed.length ? delayed.map(v => renderItem(v, 'delayed')).join('') : '<p style="text-align:center;color:#888">No reported delays in view</p>'}
                 </div>
             </div>
         </div>
     `;
     document.body.appendChild(modal);
 }
+
+/**
+ * Helper: Pan specifically to a vehicle from report
+ */
+window.panToVehicle = function (vehicleId) {
+    const vehicle = state.vehicles.find(v => v.id === vehicleId);
+    if (vehicle) {
+        closeTrafficReport();
+        state.map.flyTo([vehicle.position.lat, vehicle.position.lng], 15, {
+            animate: true,
+            duration: 1.5
+        });
+
+        // Open popup after arrival
+        setTimeout(() => {
+            const markerItem = state.markers.vehicles.find(m => m.id === vehicleId);
+            if (markerItem) markerItem.marker.openPopup();
+        }, 1600);
+    }
+};
 
 window.closeTrafficReport = function () {
     const el = document.querySelector('.traffic-report-panel').parentNode;

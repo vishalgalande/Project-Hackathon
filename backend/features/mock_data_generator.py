@@ -198,6 +198,111 @@ class MockDataGenerator:
                             ]
                         }
                     ]
+                },
+                "kerala": {
+                    "name": "Kerala",
+                    "cities": [
+                        {
+                            "name": "Kochi",
+                            "lat": 9.9312,
+                            "lng": 76.2673,
+                            "routes": 10,
+                            "allowed_types": ["Metro", "Bus", "Light Rail"],
+                            "stops": [
+                                "Aluva", "Companypaddy", "Ambattukavu", "Muttom", "Kalamassery",
+                                "Cochin University", "Pathadipalam", "Edapally", "Changampuzha Park", "Palarivattom",
+                                "Jawaharlal Nehru Stadium", "Kaloor", "Lissie", "MG Road", "Maharaja's College",
+                                "Ernakulam South", "Kadavanthra", "Elamkulam", "Vytila", "Pettah"
+                            ]
+                        },
+                        {
+                            "name": "Trivandrum",
+                            "lat": 8.5241,
+                            "lng": 76.9366,
+                            "routes": 8,
+                            "allowed_types": ["Bus"],
+                            "stops": [
+                                "East Fort", "Thampanoor", "Palayam", "Pattom", "Kesavadasapuram",
+                                "Ulloor", "Sreekaryam", "Kazhakootam", "Technopark", "Vellayambalam",
+                                "Kowdiar", "Peroorkada", "Vattiyoorkavu", "Poojappura", "Karamana"
+                            ]
+                        }
+                    ]
+                },
+                "uttar_pradesh": {
+                    "name": "Uttar Pradesh",
+                    "cities": [
+                        {
+                            "name": "Lucknow",
+                            "lat": 26.8467,
+                            "lng": 80.9462,
+                            "routes": 12,
+                            "allowed_types": ["Metro", "Bus"],
+                            "stops": [
+                                "CCS Airport", "Amausi", "Transport Nagar", "Krishna Nagar", "Singar Nagar",
+                                "Alambagh", "Charbagh", "Hussainganj", "Sachivalaya", "Hazratganj",
+                                "KD Singh Stadium", "Vishwavidyalaya", "IT College", "Badshahnagar", "Lekhraj Market",
+                                "Indira Nagar", "Munshipulia"
+                            ]
+                        },
+                        {
+                            "name": "Noida",
+                            "lat": 28.5355,
+                            "lng": 77.3910,
+                            "routes": 10,
+                            "allowed_types": ["Metro", "Bus"],
+                            "stops": [
+                                "Noida Sector 15", "Noida Sector 16", "Noida Sector 18", "Botanical Garden", "Golf Course",
+                                "Noida City Centre", "Sector 34", "Sector 52", "Sector 61", "Sector 59",
+                                "Sector 62", "Noida Electronic City"
+                            ]
+                        }
+                    ]
+                },
+                "punjab": {
+                    "name": "Punjab",
+                    "cities": [
+                        {
+                            "name": "Chandigarh",
+                            "lat": 30.7333,
+                            "lng": 76.7794,
+                            "routes": 8,
+                            "allowed_types": ["Bus"],
+                            "stops": [
+                                "ISBT 17", "ISBT 43", "PGI", "PEC", "Panjab University",
+                                "Sector 22", "Sector 35", "Sector 34", "Sector 8", "Sector 9",
+                                "Sukhna Lake", "Rock Garden", "High Court", "Sector 26", "Housing Board"
+                            ]
+                        },
+                        {
+                            "name": "Amritsar",
+                            "lat": 31.6340,
+                            "lng": 74.8723,
+                            "routes": 8,
+                            "allowed_types": ["Bus"],
+                            "stops": [
+                                "Golden Temple", "Jallianwala Bagh", "Hall Gate", "Railway Station", "ISBT",
+                                "Guru Nanak Dev University", "Putlighar", "Chheharta", "Verka", "Majitha Road"
+                            ]
+                        }
+                    ]
+                },
+                "odisha": {
+                    "name": "Odisha",
+                    "cities": [
+                        {
+                            "name": "Bhubaneswar",
+                            "lat": 20.2961,
+                            "lng": 85.8245,
+                            "routes": 8,
+                            "allowed_types": ["Bus"],
+                            "stops": [
+                                "Master Canteen", "Vani Vihar", "Jayadev Vihar", "Acharya Vihar", "Kalpana Square",
+                                "Rasulgarh", "Patia", "KIIT", "Infocity", "Chandrasekharpur",
+                                "Baramunda", "Khandagiri", "Fire Station", "CRP Square"
+                            ]
+                        }
+                    ]
                 }
             }
         }
@@ -207,7 +312,9 @@ class MockDataGenerator:
         routes = []
         route_id = 1
         
-        transport_types = ["Bus", "Metro", "Tram", "Light Rail"]
+        # Default types if not specified in city
+        default_transport_types = ["Bus", "Metro"]
+        
         route_prefixes = {
             "Bus": ["Route", "Line", "Express"],
             "Metro": ["Line", ""],
@@ -221,10 +328,19 @@ class MockDataGenerator:
                     num_routes = city["routes"]
                     city_stops = city.get("stops", [])
                     
+                    # Determine allowed transport types for this city
+                    allowed = city.get("allowed_types", default_transport_types)
+                    
                     for i in range(num_routes):
-                        transport_type = random.choice(transport_types)
-                        prefix = random.choice(route_prefixes[transport_type])
+                        transport_type = random.choice(allowed)
+                        prefix = random.choice(route_prefixes.get(transport_type, ["Route"]))
                         
+                        # Generate route path coordinates (start/end points)
+                        start_lat = city["lat"] + random.uniform(-0.1, 0.1)
+                        start_lng = city["lng"] + random.uniform(-0.1, 0.1)
+                        end_lat = city["lat"] + random.uniform(-0.1, 0.1)
+                        end_lng = city["lng"] + random.uniform(-0.1, 0.1)
+
                         # Generate route stops first to get start/end names
                         num_stops = random.randint(8, 15)
                         stops = []
