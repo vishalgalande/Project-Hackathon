@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "500721061913",
+    "project_id": "heacathon-f52de",
+    "storage_bucket": "heacathon-f52de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:500721061913:android:120816ed1aaa1da0405a88",
+        "android_client_info": {
+          "package_name": "com.example.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJg-lxdeSj03Fx37k1hwJIiN39ys6QhHE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
