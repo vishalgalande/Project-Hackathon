@@ -1,5 +1,4 @@
-# Add your backend dependencies here
-# Example:
-# Flask
-# requests
-# firebase-admin
+# Backend Dependencies
+fastapi
+uvicorn[standard]
+pydantic
