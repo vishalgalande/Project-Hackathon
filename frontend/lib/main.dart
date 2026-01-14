@@ -1,33 +1,34 @@
 import 'package:flutter/material.dart';
-// IMPORT YOUR FEATURES HERE
-import 'features/home_screen.dart';
-import 'features/login_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'app/router.dart';
+import 'app/theme.dart';
+
+/// SAFE_PROTOCOL
+/// Smart Tourist Safety System
+/// 
+/// A cyberpunk-themed Flutter Web app for tourist safety
+/// with real-time GPS tracking and danger zone alerts.
 
 void main() {
-  runApp(const TourismApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  runApp(
+    const ProviderScope(
+      child: SafeProtocolApp(),
+    ),
+  );
 }
 
-class TourismApp extends StatelessWidget {
-  const TourismApp({super.key});
-
+class SafeProtocolApp extends StatelessWidget {
+  const SafeProtocolApp({super.key});
+  
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Tourism Hackathon App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
-      // DEFINING ROUTES
-      // This allows different people to work on different pages
-      // without breaking the main app.
-      initialRoute: '/login',
-      routes: {
-        '/': (context) => const HomeScreen(),
-        // Add new features here:
-        // '/tours': (context) => const TourListScreen(),
-        '/login': (context) => const LoginScreen(),
-      },
+    return MaterialApp.router(
+      title: 'SAFE_PROTOCOL',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      routerConfig: appRouter,
     );
   }
 }
