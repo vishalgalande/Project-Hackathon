@@ -26,6 +26,23 @@ venv/
 env/
 .pytest_cache/
 
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+ios/Flutter/Generated.xcconfig
+item/Flutter/Generated.xcconfig
+android/local.properties
+.metadata
+
+# Firebase
+.firebase/
+firebase-debug.log*
+
 # IDEs
 .vscode/
 .idea/
