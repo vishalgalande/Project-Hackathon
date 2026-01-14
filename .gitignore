@@ -42,6 +42,9 @@ android/local.properties
 # Firebase
 .firebase/
 firebase-debug.log*
+service_account.json
+**/service_account.json
+firebase/service_account.json
 
 # IDEs
 .vscode/

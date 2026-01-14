@@ -1,5 +1,5 @@
-# Add your backend dependencies here
-# Example:
-# Flask
+# Backend dependencies
+firebase-admin
+flask
 # requests
-# firebase-admin
+# Add other dependencies as needed
