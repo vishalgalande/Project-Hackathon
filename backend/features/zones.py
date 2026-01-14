@@ -68,51 +68,76 @@ class Chunk:
 
 
 # ============================================================
-# MOCK DATA - Replace with Firebase later
+# DELHI MAP DATA - Real tourist locations
 # ============================================================
-# Sample chunks around a fictional tourist area
+# Delhi bounds: roughly 28.4°N - 28.8°N, 76.8°E - 77.4°E
+# Each chunk is ~0.01° x 0.01° (~1km x 1km)
+
+DELHI_CENTER = {"lat": 28.6139, "lng": 77.2090}  # For Flutter map centering
+
 MOCK_CHUNKS: Dict[str, Chunk] = {
-    "chunk_001": Chunk(
-        id="chunk_001",
-        name="Beach Area",
-        lat_min=12.9100, lat_max=12.9200,
-        lng_min=77.5800, lng_max=77.5900,
-        votes=[1, 1, 1, 1, 1, 1]  # Safe - Green
+    "delhi_001": Chunk(
+        id="delhi_001",
+        name="Connaught Place",
+        lat_min=28.6280, lat_max=28.6380,
+        lng_min=77.2150, lng_max=77.2250,
+        votes=[1, 1, 1, 1, 1, 1, 1, 1]  # Very Safe - Green (tourist hub)
     ),
-    "chunk_002": Chunk(
-        id="chunk_002",
-        name="Market District",
-        lat_min=12.9200, lat_max=12.9300,
-        lng_min=77.5800, lng_max=77.5900,
-        votes=[1, -1, 1, -1, 0]  # Neutral - Yellow
+    "delhi_002": Chunk(
+        id="delhi_002",
+        name="India Gate",
+        lat_min=28.6100, lat_max=28.6200,
+        lng_min=77.2250, lng_max=77.2350,
+        votes=[1, 1, 1, 1, 1, 1]  # Safe - Green (landmark)
     ),
-    "chunk_003": Chunk(
-        id="chunk_003",
-        name="Industrial Zone",
-        lat_min=12.9300, lat_max=12.9400,
-        lng_min=77.5800, lng_max=77.5900,
-        votes=[-1, -1, -1, -1, -1, -1]  # Danger - Red
+    "delhi_003": Chunk(
+        id="delhi_003",
+        name="Chandni Chowk",
+        lat_min=28.6500, lat_max=28.6600,
+        lng_min=77.2250, lng_max=77.2350,
+        votes=[1, -1, 1, -1, 1, -1]  # Busy/Crowded - Yellow
     ),
-    "chunk_004": Chunk(
-        id="chunk_004",
-        name="Historic Temple",
-        lat_min=12.9100, lat_max=12.9200,
-        lng_min=77.5900, lng_max=77.6000,
-        votes=[1, 1, 1, 1, 1, 1, 1, 1]  # Very Safe - Green
+    "delhi_004": Chunk(
+        id="delhi_004",
+        name="Red Fort Area",
+        lat_min=28.6550, lat_max=28.6650,
+        lng_min=77.2350, lng_max=77.2450,
+        votes=[1, 1, 1, 1]  # Leaning Safe - Yellow
     ),
-    "chunk_005": Chunk(
-        id="chunk_005",
-        name="Night Market",
-        lat_min=12.9200, lat_max=12.9300,
-        lng_min=77.5900, lng_max=77.6000,
-        votes=[-1, -1, 1, -1]  # Slightly Unsafe - Yellow
+    "delhi_005": Chunk(
+        id="delhi_005",
+        name="Old Delhi Railway Station",
+        lat_min=28.6600, lat_max=28.6700,
+        lng_min=77.2150, lng_max=77.2250,
+        votes=[-1, -1, -1, 1, -1, -1]  # Crowded/Chaotic - Red
     ),
-    "chunk_006": Chunk(
-        id="chunk_006",
-        name="Central Park",
-        lat_min=12.9300, lat_max=12.9400,
-        lng_min=77.5900, lng_max=77.6000,
-        votes=[1, 1, 1]  # Leaning Safe - Yellow
+    "delhi_006": Chunk(
+        id="delhi_006",
+        name="Karol Bagh Market",
+        lat_min=28.6500, lat_max=28.6600,
+        lng_min=77.1850, lng_max=77.1950,
+        votes=[1, -1, 1, 0]  # Mixed - Yellow
+    ),
+    "delhi_007": Chunk(
+        id="delhi_007",
+        name="Lodhi Garden",
+        lat_min=28.5900, lat_max=28.6000,
+        lng_min=77.2150, lng_max=77.2250,
+        votes=[1, 1, 1, 1, 1, 1, 1]  # Very Safe - Green (park)
+    ),
+    "delhi_008": Chunk(
+        id="delhi_008",
+        name="Hauz Khas Village",
+        lat_min=28.5500, lat_max=28.5600,
+        lng_min=77.1900, lng_max=77.2000,
+        votes=[1, 1, 1, 1, 1]  # Safe - Green (trendy area)
+    ),
+    "delhi_009": Chunk(
+        id="delhi_009",
+        name="Paharganj",
+        lat_min=28.6400, lat_max=28.6500,
+        lng_min=77.2050, lng_max=77.2150,
+        votes=[-1, -1, -1, -1, -1, 1]  # Risky - Red (backpacker area, scams)
     ),
 }
 
