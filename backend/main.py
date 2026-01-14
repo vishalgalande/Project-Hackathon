@@ -1,32 +1,57 @@
+"""
+Main Flask Application for Public Transport Tracking System
+"""
+
+from flask import Flask, jsonify
+from flask_cors import CORS
 import sys
 import os
 
-# Simulating a web server entry point (like FastAPI/Flask)
-
-# IMPORT FEATURES
-# Adding the current directory to path so imports work easily for this demo
+# Add current directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from features.tours import TourRoutes
-from features.zones import ZoneRoutes
+# Import feature blueprints
+from features.routes import routes_bp
+from features.tracking import tracking_bp
 
-def main():
-    print("Starting Tourism App Backend...")
-    
-    # REGISTER ROUTES
-    # In Flask/FastAPI, this would be app.include_router(...)
-    
-    print("Registering Tour Routes...")
-    tours = TourRoutes.get_all_tours()
-    print(f"Verified Tours Endpoint: {tours}")
+# Create Flask app
+app = Flask(__name__)
 
-    print("\nRegistering Zone Routes...")
-    zones = ZoneRoutes.get_all_zones()
-    print(f"Verified Zones Endpoint: {zones['count']} zones loaded")
-    for zone in zones['zones']:
-        print(f"  - {zone['name']}: {zone['zone_color'].upper()}")
+# Enable CORS for frontend communication
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-    print("\nServer Ready!")
+# Register blueprints
+app.register_blueprint(routes_bp)
+app.register_blueprint(tracking_bp)
 
-if __name__ == "__main__":
-    main()
+@app.route('/')
+def home():
+    """API home endpoint"""
+    return jsonify({
+        "name": "Public Transport Tracking API",
+        "version": "1.0.0",
+        "endpoints": {
+            "regions": "/api/regions",
+            "routes": "/api/routes",
+            "search": "/api/routes/search?q=<query>",
+            "route_details": "/api/routes/<route_id>",
+            "tracking": "/api/tracking/<route_id>",
+            "tracking_updates": "/api/tracking/<route_id>/updates",
+            "all_vehicles": "/api/tracking/all"
+        }
+    })
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({
+        "status": "healthy",
+        "service": "transport-tracking-api"
+    }), 200
+
+if __name__ == '__main__':
+    print("🚌 Starting Public Transport Tracking API...")
+    print("📍 Server running on http://localhost:5000")
+    print("🌍 CORS enabled for all origins")
+    app.run(debug=True, host='0.0.0.0', port=5000)
+

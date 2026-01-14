@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Transit Tracker - Real-Time Public Transport</title>
+    <meta name="description" content="Track public transportation in real-time across 50+ countries with live vehicle positions and route information">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>Loading Global Transit Network...</h2>
+            <p>Connecting to transport systems worldwide</p>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect x="4" y="8" width="24" height="20" rx="3" fill="url(#gradient1)"/>
+                        <circle cx="10" cy="24" r="2" fill="white"/>
+                        <circle cx="22" cy="24" r="2" fill="white"/>
+                        <rect x="8" y="12" width="16" height="8" rx="1" fill="white" opacity="0.3"/>
+                        <defs>
+                            <linearGradient id="gradient1" x1="4" y1="8" x2="28" y2="28">
+                                <stop offset="0%" stop-color="#667eea"/>
+                                <stop offset="100%" stop-color="#764ba2"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <h1>Global Transit Tracker</h1>
+                </div>
+                
+                <div class="header-actions">
+                    <div class="region-selector">
+                        <label for="region-select">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM1 8a7 7 0 0 1 13.95-.75h-2.03a5.5 5.5 0 0 0-9.84 0H1.05A7.003 7.003 0 0 1 1 8zm13.95.75a7.003 7.003 0 0 1-13.9 0h2.03a5.5 5.5 0 0 0 9.84 0h2.03z"/>
+                            </svg>
+                        </label>
+                        <select id="region-select">
+                            <option value="">🌍 All Regions</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn-icon" id="refresh-btn" title="Refresh Data">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M4 2a1 1 0 0 1 1 1v2.586l.293-.293a6.5 6.5 0 1 1 0 9.414l-1.414-1.414a5 5 0 1 0 0-7.071L5 7.414V10a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <div class="search-bar">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"/>
+                </svg>
+                <input 
+                    type="text" 
+                    id="search-input" 
+                    placeholder="Search routes by name, number, or city..."
+                    autocomplete="off"
+                />
+                <button class="clear-search" id="clear-search" style="display: none;">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Search Results Dropdown -->
+            <div class="search-results" id="search-results" style="display: none;">
+                <div class="search-results-header">
+                    <span id="results-count">0 results</span>
+                </div>
+                <div class="search-results-list" id="search-results-list">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Map Container -->
+            <div class="map-container">
+                <div id="map"></div>
+                
+                <!-- Map Controls -->
+                <div class="map-controls">
+                    <button class="map-control-btn" id="locate-btn" title="Center on Selected Region">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"/>
+                        </svg>
+                    </button>
+                    
+                    <button class="map-control-btn" id="toggle-traffic" title="Toggle Live Vehicles">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Active Routes Counter -->
+                <div class="stats-overlay">
+                    <div class="stat-item">
+                        <span class="stat-value" id="active-routes">0</span>
+                        <span class="stat-label">Active Routes</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="active-vehicles">0</span>
+                        <span class="stat-label">Live Vehicles</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side Panel -->
+            <div class="side-panel" id="side-panel">
+                <div class="panel-header">
+                    <h2 id="panel-title">Select a Route</h2>
+                    <button class="btn-icon" id="close-panel">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="panel-content" id="panel-content">
+                    <div class="empty-state">
+                        <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                            <circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="2" opacity="0.2"/>
+                            <path d="M32 20v24M20 32h24" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <p>Search for a route or click on the map to view details</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
