@@ -152,7 +152,17 @@ class _LandingPageState extends State<LandingPage> {
               ),
               child: Center(
                 child: Text(
-                  (_user!.displayName ?? _user!.email ?? 'U')[0].toUpperCase(),
+                  () {
+                    final name = _user!.displayName;
+                    final email = _user!.email;
+                    String initial = 'U';
+                    if (name != null && name.isNotEmpty) {
+                      initial = name[0];
+                    } else if (email != null && email.isNotEmpty) {
+                      initial = email[0];
+                    }
+                    return initial.toUpperCase();
+                  }(),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
