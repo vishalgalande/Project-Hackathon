@@ -1,5 +1,6 @@
 # Backend dependencies
 firebase-admin
 flask
+flask-cors
 # requests
 # Add other dependencies as needed
