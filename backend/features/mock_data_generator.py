@@ -14,190 +14,189 @@ class MockDataGenerator:
         self.vehicles = self._generate_vehicles()
     
     def _generate_regions(self):
-        """Generate data for major cities across 50+ countries"""
+        """Generate data for major cities in India"""
         return {
-            "north_america": {
-                "usa": {
-                    "name": "United States",
+            "india": {
+                "maharashtra": {
+                    "name": "Maharashtra",
                     "cities": [
-                        {"name": "New York", "lat": 40.7128, "lng": -74.0060, "routes": 15},
-                        {"name": "Los Angeles", "lat": 34.0522, "lng": -118.2437, "routes": 12},
-                        {"name": "Chicago", "lat": 41.8781, "lng": -87.6298, "routes": 10},
-                        {"name": "San Francisco", "lat": 37.7749, "lng": -122.4194, "routes": 8}
+                        {
+                            "name": "Mumbai", 
+                            "lat": 19.0760, 
+                            "lng": 72.8777, 
+                            "routes": 20,
+                            "stops": [
+                                "Churchgate", "Marine Lines", "Charni Road", "Grant Road", "Mumbai Central",
+                                "Mahalaxmi", "Lower Parel", "Elphinstone Road", "Dadar", "Matunga",
+                                "Sion", "Kurla", "Ghatkopar", "Vikhroli", "Bhandup",
+                                "Mulund", "Thane", "Kalyan", "Dombivli", "Badlapur",
+                                "Andheri", "Jogeshwari", "Goregaon", "Malad", "Kandivali",
+                                "Borivali", "Dahisar", "Mira Road", "Bhayandar", "Vasai"
+                            ]
+                        },
+                        {
+                            "name": "Pune", 
+                            "lat": 18.5204, 
+                            "lng": 73.8567, 
+                            "routes": 15,
+                            "stops": [
+                                "Shivajinagar", "Deccan", "Kothrud", "Karve Nagar", "Warje",
+                                "Katraj", "Swargate", "Hadapsar", "Magarpatta", "Kharadi",
+                                "Viman Nagar", "Kalyani Nagar", "Koregaon Park", "Camp", "MG Road",
+                                "Pimpri", "Chinchwad", "Wakad", "Hinjewadi", "Baner"
+                            ]
+                        },
+                        {
+                            "name": "Nagpur",
+                            "lat": 21.1458,
+                            "lng": 79.0882,
+                            "routes": 10,
+                            "stops": [
+                                "Sitabuldi", "Dharampeth", "Sadar", "Itwari", "Kamptee Road",
+                                "Ajni", "Wardha Road", "Hingna", "Koradi", "Khapri"
+                            ]
+                        }
                     ]
                 },
-                "canada": {
-                    "name": "Canada",
+                "delhi": {
+                    "name": "Delhi NCR",
                     "cities": [
-                        {"name": "Toronto", "lat": 43.6532, "lng": -79.3832, "routes": 10},
-                        {"name": "Vancouver", "lat": 49.2827, "lng": -123.1207, "routes": 8},
-                        {"name": "Montreal", "lat": 45.5017, "lng": -73.5673, "routes": 9}
+                        {
+                            "name": "Delhi", 
+                            "lat": 28.7041, 
+                            "lng": 77.1025, 
+                            "routes": 25,
+                            "stops": [
+                                "Connaught Place", "Rajiv Chowk", "Kashmere Gate", "ISBT", "Red Fort",
+                                "Chandni Chowk", "New Delhi Railway Station", "Paharganj", "Karol Bagh", "Rajouri Garden",
+                                "Janakpuri", "Dwarka", "Uttam Nagar", "Najafgarh", "Rohini",
+                                "Pitampura", "Shalimar Bagh", "Model Town", "GTB Nagar", "Vishwavidyalaya",
+                                "Civil Lines", "Shahdara", "Anand Vihar", "Laxmi Nagar", "Mayur Vihar",
+                                "Noida City Centre", "Botanical Garden", "Vaishali", "Ghaziabad", "Saket"
+                            ]
+                        },
+                        {
+                            "name": "Gurgaon",
+                            "lat": 28.4595,
+                            "lng": 77.0266,
+                            "routes": 12,
+                            "stops": [
+                                "Cyber City", "MG Road", "IFFCO Chowk", "Huda City Centre", "Sikanderpur",
+                                "Golf Course Road", "DLF Phase 1", "DLF Phase 2", "DLF Phase 3", "Sector 14",
+                                "Sector 29", "Sector 56", "Sector 54", "Sector 55", "Sector 43"
+                            ]
+                        }
                     ]
                 },
-                "mexico": {
-                    "name": "Mexico",
+                "karnataka": {
+                    "name": "Karnataka",
                     "cities": [
-                        {"name": "Mexico City", "lat": 19.4326, "lng": -99.1332, "routes": 14},
-                        {"name": "Guadalajara", "lat": 20.6597, "lng": -103.3496, "routes": 7}
-                    ]
-                }
-            },
-            "europe": {
-                "uk": {
-                    "name": "United Kingdom",
-                    "cities": [
-                        {"name": "London", "lat": 51.5074, "lng": -0.1278, "routes": 20},
-                        {"name": "Manchester", "lat": 53.4808, "lng": -2.2426, "routes": 8},
-                        {"name": "Birmingham", "lat": 52.4862, "lng": -1.8904, "routes": 7}
-                    ]
-                },
-                "france": {
-                    "name": "France",
-                    "cities": [
-                        {"name": "Paris", "lat": 48.8566, "lng": 2.3522, "routes": 18},
-                        {"name": "Lyon", "lat": 45.7640, "lng": 4.8357, "routes": 8},
-                        {"name": "Marseille", "lat": 43.2965, "lng": 5.3698, "routes": 7}
-                    ]
-                },
-                "germany": {
-                    "name": "Germany",
-                    "cities": [
-                        {"name": "Berlin", "lat": 52.5200, "lng": 13.4050, "routes": 16},
-                        {"name": "Munich", "lat": 48.1351, "lng": 11.5820, "routes": 10},
-                        {"name": "Hamburg", "lat": 53.5511, "lng": 9.9937, "routes": 9}
+                        {
+                            "name": "Bangalore", 
+                            "lat": 12.9716, 
+                            "lng": 77.5946, 
+                            "routes": 22,
+                            "stops": [
+                                "Majestic", "City Railway Station", "Cubbon Park", "MG Road", "Brigade Road",
+                                "Indiranagar", "Koramangala", "BTM Layout", "Jayanagar", "JP Nagar",
+                                "Banashankari", "Basavanagudi", "Malleshwaram", "Rajajinagar", "Yeshwanthpur",
+                                "Hebbal", "Manyata Tech Park", "Yelahanka", "Whitefield", "Marathahalli",
+                                "Silk Board", "Electronic City", "Hosur Road", "Sarjapur Road", "Bellandur"
+                            ]
+                        },
+                        {
+                            "name": "Mysore",
+                            "lat": 12.2958,
+                            "lng": 76.6394,
+                            "routes": 8,
+                            "stops": [
+                                "Mysore Palace", "Chamundi Hills", "KR Circle", "Saraswathipuram", "Vijayanagar",
+                                "Kuvempunagar", "Hebbal", "Hinkal", "Hunsur Road", "Bannimantap"
+                            ]
+                        }
                     ]
                 },
-                "spain": {
-                    "name": "Spain",
+                "tamil_nadu": {
+                    "name": "Tamil Nadu",
                     "cities": [
-                        {"name": "Madrid", "lat": 40.4168, "lng": -3.7038, "routes": 14},
-                        {"name": "Barcelona", "lat": 41.3851, "lng": 2.1734, "routes": 12}
+                        {
+                            "name": "Chennai",
+                            "lat": 13.0827,
+                            "lng": 80.2707,
+                            "routes": 18,
+                            "stops": [
+                                "Chennai Central", "Egmore", "T Nagar", "Anna Nagar", "Adyar",
+                                "Velachery", "Tambaram", "Chrompet", "Guindy", "Saidapet",
+                                "Mylapore", "Triplicane", "George Town", "Parrys", "Broadway",
+                                "Koyambedu", "Vadapalani", "Ashok Nagar", "KK Nagar", "Porur"
+                            ]
+                        }
                     ]
                 },
-                "italy": {
-                    "name": "Italy",
+                "west_bengal": {
+                    "name": "West Bengal",
                     "cities": [
-                        {"name": "Rome", "lat": 41.9028, "lng": 12.4964, "routes": 12},
-                        {"name": "Milan", "lat": 45.4642, "lng": 9.1900, "routes": 10}
+                        {
+                            "name": "Kolkata",
+                            "lat": 22.5726,
+                            "lng": 88.3639,
+                            "routes": 16,
+                            "stops": [
+                                "Howrah", "Sealdah", "Esplanade", "Park Street", "Dalhousie",
+                                "BBD Bagh", "Maidan", "Kalighat", "Tollygunge", "Jadavpur",
+                                "Garia", "Ballygunge", "Gariahat", "Lake Market", "Salt Lake",
+                                "Rajarhat", "New Town", "Dum Dum", "Airport", "Barasat"
+                            ]
+                        }
                     ]
                 },
-                "netherlands": {
-                    "name": "Netherlands",
+                "telangana": {
+                    "name": "Telangana",
                     "cities": [
-                        {"name": "Amsterdam", "lat": 52.3676, "lng": 4.9041, "routes": 11},
-                        {"name": "Rotterdam", "lat": 51.9244, "lng": 4.4777, "routes": 7}
-                    ]
-                }
-            },
-            "asia": {
-                "india": {
-                    "name": "India",
-                    "cities": [
-                        {"name": "Mumbai", "lat": 19.0760, "lng": 72.8777, "routes": 18},
-                        {"name": "Delhi", "lat": 28.7041, "lng": 77.1025, "routes": 16},
-                        {"name": "Bangalore", "lat": 12.9716, "lng": 77.5946, "routes": 14},
-                        {"name": "Pune", "lat": 18.5204, "lng": 73.8567, "routes": 10}
-                    ]
-                },
-                "china": {
-                    "name": "China",
-                    "cities": [
-                        {"name": "Beijing", "lat": 39.9042, "lng": 116.4074, "routes": 22},
-                        {"name": "Shanghai", "lat": 31.2304, "lng": 121.4737, "routes": 20},
-                        {"name": "Guangzhou", "lat": 23.1291, "lng": 113.2644, "routes": 15}
+                        {
+                            "name": "Hyderabad",
+                            "lat": 17.3850,
+                            "lng": 78.4867,
+                            "routes": 18,
+                            "stops": [
+                                "Secunderabad", "Parade Ground", "Begumpet", "Ameerpet", "SR Nagar",
+                                "KPHB", "Kukatpally", "Miyapur", "Lingampally", "Hi-Tech City",
+                                "Madhapur", "Gachibowli", "Financial District", "Mehdipatnam", "Lakdi-ka-pul",
+                                "Nampally", "Abids", "Koti", "Malakpet", "Dilsukhnagar"
+                            ]
+                        }
                     ]
                 },
-                "japan": {
-                    "name": "Japan",
+                "gujarat": {
+                    "name": "Gujarat",
                     "cities": [
-                        {"name": "Tokyo", "lat": 35.6762, "lng": 139.6503, "routes": 25},
-                        {"name": "Osaka", "lat": 34.6937, "lng": 135.5023, "routes": 14},
-                        {"name": "Kyoto", "lat": 35.0116, "lng": 135.7681, "routes": 8}
+                        {
+                            "name": "Ahmedabad",
+                            "lat": 23.0225,
+                            "lng": 72.5714,
+                            "routes": 14,
+                            "stops": [
+                                "Kalupur Railway Station", "Lal Darwaja", "Relief Road", "Paldi", "Navrangpura",
+                                "Satellite", "Vastrapur", "Bodakdev", "SG Highway", "Maninagar",
+                                "Naroda", "Nikol", "Vastral", "Narol", "Sarkhej"
+                            ]
+                        }
                     ]
                 },
-                "singapore": {
-                    "name": "Singapore",
+                "rajasthan": {
+                    "name": "Rajasthan",
                     "cities": [
-                        {"name": "Singapore", "lat": 1.3521, "lng": 103.8198, "routes": 16}
-                    ]
-                },
-                "south_korea": {
-                    "name": "South Korea",
-                    "cities": [
-                        {"name": "Seoul", "lat": 37.5665, "lng": 126.9780, "routes": 18},
-                        {"name": "Busan", "lat": 35.1796, "lng": 129.0756, "routes": 10}
-                    ]
-                },
-                "thailand": {
-                    "name": "Thailand",
-                    "cities": [
-                        {"name": "Bangkok", "lat": 13.7563, "lng": 100.5018, "routes": 14}
-                    ]
-                },
-                "uae": {
-                    "name": "United Arab Emirates",
-                    "cities": [
-                        {"name": "Dubai", "lat": 25.2048, "lng": 55.2708, "routes": 12},
-                        {"name": "Abu Dhabi", "lat": 24.4539, "lng": 54.3773, "routes": 8}
-                    ]
-                }
-            },
-            "oceania": {
-                "australia": {
-                    "name": "Australia",
-                    "cities": [
-                        {"name": "Sydney", "lat": -33.8688, "lng": 151.2093, "routes": 14},
-                        {"name": "Melbourne", "lat": -37.8136, "lng": 144.9631, "routes": 12},
-                        {"name": "Brisbane", "lat": -27.4698, "lng": 153.0251, "routes": 9}
-                    ]
-                },
-                "new_zealand": {
-                    "name": "New Zealand",
-                    "cities": [
-                        {"name": "Auckland", "lat": -36.8485, "lng": 174.7633, "routes": 8},
-                        {"name": "Wellington", "lat": -41.2865, "lng": 174.7762, "routes": 6}
-                    ]
-                }
-            },
-            "south_america": {
-                "brazil": {
-                    "name": "Brazil",
-                    "cities": [
-                        {"name": "São Paulo", "lat": -23.5505, "lng": -46.6333, "routes": 16},
-                        {"name": "Rio de Janeiro", "lat": -22.9068, "lng": -43.1729, "routes": 12}
-                    ]
-                },
-                "argentina": {
-                    "name": "Argentina",
-                    "cities": [
-                        {"name": "Buenos Aires", "lat": -34.6037, "lng": -58.3816, "routes": 14}
-                    ]
-                },
-                "chile": {
-                    "name": "Chile",
-                    "cities": [
-                        {"name": "Santiago", "lat": -33.4489, "lng": -70.6693, "routes": 10}
-                    ]
-                }
-            },
-            "africa": {
-                "south_africa": {
-                    "name": "South Africa",
-                    "cities": [
-                        {"name": "Johannesburg", "lat": -26.2041, "lng": 28.0473, "routes": 10},
-                        {"name": "Cape Town", "lat": -33.9249, "lng": 18.4241, "routes": 8}
-                    ]
-                },
-                "egypt": {
-                    "name": "Egypt",
-                    "cities": [
-                        {"name": "Cairo", "lat": 30.0444, "lng": 31.2357, "routes": 12}
-                    ]
-                },
-                "nigeria": {
-                    "name": "Nigeria",
-                    "cities": [
-                        {"name": "Lagos", "lat": 6.5244, "lng": 3.3792, "routes": 10}
+                        {
+                            "name": "Jaipur",
+                            "lat": 26.9124,
+                            "lng": 75.7873,
+                            "routes": 12,
+                            "stops": [
+                                "Jaipur Railway Station", "Sindhi Camp", "MI Road", "Ajmeri Gate", "Sanganeri Gate",
+                                "Malviya Nagar", "Mansarovar", "Vaishali Nagar", "Jagatpura", "Sitapura",
+                                "Tonk Road", "Durgapura", "Jawahar Circle", "C-Scheme", "Bani Park"
+                            ]
+                        }
                     ]
                 }
             }
@@ -220,6 +219,7 @@ class MockDataGenerator:
             for country_code, country_data in countries.items():
                 for city in country_data["cities"]:
                     num_routes = city["routes"]
+                    city_stops = city.get("stops", [])
                     
                     for i in range(num_routes):
                         transport_type = random.choice(transport_types)
@@ -238,19 +238,35 @@ class MockDataGenerator:
                         end_lat = city["lat"] + random.uniform(-0.1, 0.1)
                         end_lng = city["lng"] + random.uniform(-0.1, 0.1)
                         
-                        # Generate stops along the route
-                        num_stops = random.randint(8, 20)
+                        # Generate stops along the route using actual stop names
+                        num_stops = random.randint(8, 15)
                         stops = []
-                        for j in range(num_stops):
-                            t = j / (num_stops - 1)
-                            stop_lat = start_lat + (end_lat - start_lat) * t
-                            stop_lng = start_lng + (end_lng - start_lng) * t
-                            stops.append({
-                                "name": f"Stop {j + 1}",
-                                "lat": stop_lat,
-                                "lng": stop_lng,
-                                "order": j + 1
-                            })
+                        
+                        if city_stops and len(city_stops) >= num_stops:
+                            # Use actual stop names from city data
+                            selected_stops = random.sample(city_stops, num_stops)
+                            for j, stop_name in enumerate(selected_stops):
+                                t = j / (num_stops - 1) if num_stops > 1 else 0
+                                stop_lat = start_lat + (end_lat - start_lat) * t
+                                stop_lng = start_lng + (end_lng - start_lng) * t
+                                stops.append({
+                                    "name": stop_name,
+                                    "lat": stop_lat,
+                                    "lng": stop_lng,
+                                    "order": j + 1
+                                })
+                        else:
+                            # Fallback to generic names if no city stops available
+                            for j in range(num_stops):
+                                t = j / (num_stops - 1) if num_stops > 1 else 0
+                                stop_lat = start_lat + (end_lat - start_lat) * t
+                                stop_lng = start_lng + (end_lng - start_lng) * t
+                                stops.append({
+                                    "name": f"Stop {j + 1}",
+                                    "lat": stop_lat,
+                                    "lng": stop_lng,
+                                    "order": j + 1
+                                })
                         
                         route = {
                             "id": f"route_{route_id}",

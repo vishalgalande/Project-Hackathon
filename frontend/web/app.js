@@ -32,16 +32,13 @@ document.addEventListener('DOMContentLoaded', async () => {
  * Initialize the application
  */
 async function initializeApp() {
-    // Initialize map
+    // Initialize map centered on India
     initializeMap();
-
-    // Load regions
-    await loadRegions();
 
     // Setup event listeners
     setupEventListeners();
 
-    // Load initial routes
+    // Load routes for India
     await loadRoutes();
 
     // Hide loading screen
@@ -54,47 +51,22 @@ async function initializeApp() {
  * Initialize Leaflet map
  */
 function initializeMap() {
-    // Create map centered on world view
+    // Create map centered on India
     state.map = L.map('map', {
         zoomControl: false
-    }).setView([20, 0], 2);
+    }).setView([20.5937, 78.9629], 5); // Center of India
 
     // Add tile layer (OpenStreetMap)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 19,
-        minZoom: 2
+        minZoom: 4
     }).addTo(state.map);
 
     // Add zoom control to bottom right
     L.control.zoom({
         position: 'bottomright'
     }).addTo(state.map);
-}
-
-/**
- * Load and populate regions dropdown
- */
-async function loadRegions() {
-    try {
-        const response = await api.getRegions();
-        const regions = response.data;
-
-        const select = document.getElementById('region-select');
-
-        // Sort regions by name
-        regions.sort((a, b) => a.name.localeCompare(b.name));
-
-        // Populate dropdown
-        regions.forEach(region => {
-            const option = document.createElement('option');
-            option.value = region.code;
-            option.textContent = `${region.name}`;
-            select.appendChild(option);
-        });
-    } catch (error) {
-        console.error('Failed to load regions:', error);
-    }
 }
 
 /**
@@ -439,34 +411,6 @@ function updateStats() {
  * Setup event listeners
  */
 function setupEventListeners() {
-    // Region selector
-    document.getElementById('region-select').addEventListener('change', async (e) => {
-        const region = e.target.value;
-        state.selectedRegion = region;
-
-        // Clear selected route
-        state.selectedRoute = null;
-        clearInterval(state.updateInterval);
-
-        // Clear route markers
-        state.markers.routes.forEach(marker => marker.remove());
-        state.markers.routes = [];
-
-        // Load routes for selected region
-        const filters = region ? { country: region } : {};
-        await loadRoutes(filters);
-
-        // Center map on region if selected
-        if (region && state.routes.length > 0) {
-            const firstRoute = state.routes[0];
-            if (firstRoute.stops && firstRoute.stops.length > 0) {
-                state.map.setView([firstRoute.stops[0].lat, firstRoute.stops[0].lng], 10);
-            }
-        } else {
-            state.map.setView([20, 0], 2);
-        }
-    });
-
     // Search input
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
