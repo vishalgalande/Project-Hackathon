@@ -558,6 +558,117 @@ function animateMarkerMovement(marker, startPos, endPos, duration) {
 }
 
 /**
+ * Open traffic report modal
+ */
+function openTrafficReport() {
+    // Check if modal already exists
+    if (document.querySelector('.traffic-report-panel')) return;
+
+    // Filter crowded vehicles (occupancy > 70%)
+    const crowdedVehicles = state.vehicles.filter(v =>
+        (v.occupancy / v.capacity) > 0.7
+    ).sort((a, b) => (b.occupancy / b.capacity) - (a.occupancy / a.capacity));
+
+    // Filter delayed vehicles
+    const delayedVehicles = state.vehicles.filter(v =>
+        v.status && v.status.includes('Delayed')
+    );
+
+    // Create modal structure
+    const backdrop = document.createElement('div');
+    backdrop.className = 'overlay-backdrop';
+    backdrop.onclick = closeTrafficReport; // Close when clicking backdrop
+
+    const panel = document.createElement('div');
+    panel.className = 'traffic-report-panel';
+
+    // Generate content
+    let crowdedContent = '';
+    if (crowdedVehicles.length > 0) {
+        crowdedContent = crowdedVehicles.slice(0, 5).map(v => {
+            const occupancyPct = Math.round((v.occupancy / v.capacity) * 100);
+            return `
+                <div class="traffic-item high-traffic">
+                    <div class="traffic-info">
+                        <div class="traffic-route">${v.route_number || v.route_name}</div>
+                        <div class="traffic-details">
+                            <span>Vehicle #${v.id.split('_')[1]}</span>
+                            <span>${v.speed} km/h</span>
+                        </div>
+                    </div>
+                    <div class="traffic-status status-crowded">
+                        ${occupancyPct}% Full
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } else {
+        crowdedContent = '<div style="color: var(--text-secondary); text-align: center; padding: 1rem;">No substantial crowding reported</div>';
+    }
+
+    let delayedContent = '';
+    if (delayedVehicles.length > 0) {
+        delayedContent = delayedVehicles.slice(0, 5).map(v => `
+            <div class="traffic-item medium-traffic">
+                <div class="traffic-info">
+                    <div class="traffic-route">${v.route_number || v.route_name}</div>
+                    <div class="traffic-details">
+                        <span>Heading to: ${v.next_stops && v.next_stops[0] ? v.next_stops[0].name : 'Unknown'}</span>
+                    </div>
+                </div>
+                <div class="traffic-status status-moderate">
+                    ${v.status}
+                </div>
+            </div>
+        `).join('');
+    } else {
+        delayedContent = '<div style="color: var(--text-secondary); text-align: center; padding: 1rem;">No delays reported</div>';
+    }
+
+    panel.innerHTML = `
+        <div class="traffic-report-header">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" color="#fbbf24">
+                    <path d="M12 2L2 22h20L12 2zm0 3.5L18.5 20H5.5L12 5.5zM11 16h2v2h-2v-2zm0-6h2v4h-2v-4z"/>
+                </svg>
+                Live Traffic Report
+            </h2>
+            <button class="close-report-btn" onclick="closeTrafficReport()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
+        </div>
+        <div class="traffic-report-content">
+            <div class="traffic-section">
+                <h3>⚠️ High Occupancy Routes</h3>
+                ${crowdedContent}
+            </div>
+            
+            <div class="traffic-section">
+                <h3>⏱️ Delayed Services</h3>
+                ${delayedContent}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(panel);
+}
+
+/**
+ * Close traffic report modal
+ */
+// Define globally so it can be called from HTML onclick
+window.closeTrafficReport = function () {
+    const backdrop = document.querySelector('.overlay-backdrop');
+    const panel = document.querySelector('.traffic-report-panel');
+
+    if (backdrop) backdrop.remove();
+    if (panel) panel.remove();
+}
+
+/**
  * Setup event listeners
  */
 function setupEventListeners() {
@@ -636,11 +747,16 @@ function setupEventListeners() {
         }
     });
 
+    // Traffic report button
+    document.getElementById('traffic-report-btn').addEventListener('click', openTrafficReport);
+
     // Close panel button
     document.getElementById('close-panel').addEventListener('click', () => {
         // Clear selected route
         state.selectedRoute = null;
         clearInterval(state.updateInterval);
+        state.map.closePopup(); // Close any open popups
+        document.getElementById('side-panel').classList.remove('open'); // Close the side panel
 
         // Clear route markers
         state.markers.routes.forEach(marker => marker.remove());

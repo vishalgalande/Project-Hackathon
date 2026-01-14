@@ -225,20 +225,7 @@ class MockDataGenerator:
                         transport_type = random.choice(transport_types)
                         prefix = random.choice(route_prefixes[transport_type])
                         
-                        # Generate route number/name
-                        if transport_type == "Metro":
-                            route_name = f"{prefix} {random.choice(['Red', 'Blue', 'Green', 'Yellow', 'Orange', 'Purple'])}"
-                        else:
-                            route_number = random.randint(1, 999)
-                            route_name = f"{prefix} {route_number}" if prefix else str(route_number)
-                        
-                        # Generate route path (simplified as a line)
-                        start_lat = city["lat"] + random.uniform(-0.1, 0.1)
-                        start_lng = city["lng"] + random.uniform(-0.1, 0.1)
-                        end_lat = city["lat"] + random.uniform(-0.1, 0.1)
-                        end_lng = city["lng"] + random.uniform(-0.1, 0.1)
-                        
-                        # Generate stops along the route using actual stop names
+                        # Generate route stops first to get start/end names
                         num_stops = random.randint(8, 15)
                         stops = []
                         
@@ -267,11 +254,22 @@ class MockDataGenerator:
                                     "lng": stop_lng,
                                     "order": j + 1
                                 })
-                        
+
+                        # Generate route name based on start and end stops
+                        if stops:
+                            start_stop = stops[0]["name"]
+                            end_stop = stops[-1]["name"]
+                            route_name = f"{start_stop} - {end_stop}"
+                        else:
+                            route_name = f"{prefix} {random.randint(1, 999)}"
+
+                        # Add original route number for display if needed
+                        route_number_display = f"{prefix} {random.randint(1, 999)}" if transport_type != "Metro" else f"{prefix} {random.choice(['Red', 'Blue', 'Green', 'Yellow', 'Orange', 'Purple'])}"
+
                         route = {
                             "id": f"route_{route_id}",
-                            "route_number": route_name,
-                            "name": f"{city['name']} {transport_type} {route_name}",
+                            "route_number": route_number_display,
+                            "name": route_name,
                             "type": transport_type,
                             "city": city["name"],
                             "country": country_data["name"],
