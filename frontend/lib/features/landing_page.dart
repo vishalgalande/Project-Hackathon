@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'auth/auth_dialogs.dart';
 import 'chatbot/chat_button.dart';
+import 'sos/sos_page.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -53,8 +54,13 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   Widget _buildNavBar() {
+    final width = MediaQuery.of(context).size.width;
+    final isDesktop = width > 900;
+    final isMobile = width < 600;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+      padding:
+          EdgeInsets.symmetric(horizontal: isMobile ? 16 : 32, vertical: 16),
       decoration: BoxDecoration(
         color: AppColors.bgDark.withOpacity(0.8),
         border: const Border(
@@ -82,19 +88,20 @@ class _LandingPageState extends State<LandingPage> {
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                'SafeTravel',
-                style: GoogleFonts.inter(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+              if (!isMobile) // Optional: Hide title on very small screens if needed
+                Text(
+                  'SafeTravel',
+                  style: GoogleFonts.inter(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
             ],
           ),
           const Spacer(),
-          // Nav links (hidden on small screens)
-          if (MediaQuery.of(context).size.width > 900)
+          // Desktop Navigation
+          if (isDesktop) ...[
             Row(
               children: [
                 _NavLink(text: 'Home', isActive: true, onTap: () {}),
@@ -102,6 +109,12 @@ class _LandingPageState extends State<LandingPage> {
                 _NavLink(
                   text: 'Safety Zones',
                   onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'Safety Map feature - Navigate to web version'),
+                      ),
+                    );
                     context.go('/geofencing');
                   },
                 ),
@@ -119,11 +132,121 @@ class _LandingPageState extends State<LandingPage> {
                 ),
               ],
             ),
-          const SizedBox(width: 40),
-          // Auth section
-          _buildAuthSection(),
+            const SizedBox(width: 40),
+            _buildAuthSection(),
+          ] else ...[
+            // Mobile Menu Button
+            IconButton(
+              icon: const Icon(Icons.menu, color: AppColors.textPrimary),
+              onPressed: () => _showMobileMenu(context),
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  void _showMobileMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _MobileMenuLink(
+                text: 'Home',
+                icon: Icons.home,
+                isActive: true,
+                onTap: () => Navigator.pop(context),
+              ),
+              _MobileMenuLink(
+                text: 'Safety Map',
+                icon: Icons.map,
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Navigate to Safety Map')),
+                  );
+                },
+              ),
+              _MobileMenuLink(
+                text: 'Transit Tracker',
+                icon: Icons.directions_bus,
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Navigate to Transit Tracker')),
+                  );
+                },
+              ),
+              const Divider(color: AppColors.border, height: 32),
+              if (_user != null) ...[
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.primary,
+                    child: Text(
+                      (_user!.displayName ?? _user!.email ?? 'U')[0]
+                          .toUpperCase(),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  title: Text(
+                    _user!.displayName ?? _user!.email ?? 'User',
+                    style: const TextStyle(color: AppColors.textPrimary),
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.logout,
+                        color: AppColors.textSecondary),
+                    onPressed: () {
+                      FirebaseAuth.instance.signOut();
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+              ] else ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      showLoginDialog(context);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textPrimary,
+                      side: const BorderSide(color: AppColors.border),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text('Log In'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      showSignupDialog(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text('Sign Up'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -428,12 +551,18 @@ class _LandingPageState extends State<LandingPage> {
                     title: 'Emergency SOS',
                     description:
                         'One-tap emergency button with automatic location sharing to your trusted contacts and local authorities.',
-                    linkText: 'Launching Soon',
-                    status: FeatureStatus.comingSoon,
+                    linkText: 'Open SOS',
+                    status: FeatureStatus.live,
                     width: isWide
                         ? (constraints.maxWidth - 24) / 2
                         : constraints.maxWidth,
-                    onTap: null,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const SosPage()),
+                      );
+                    },
                   ),
                 ],
               );
@@ -571,6 +700,39 @@ class _NavLinkState extends State<_NavLink> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MobileMenuLink extends StatelessWidget {
+  final String text;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isActive;
+
+  const _MobileMenuLink({
+    required this.text,
+    required this.icon,
+    required this.onTap,
+    this.isActive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isActive ? AppColors.primary : AppColors.textSecondary,
+      ),
+      title: Text(
+        text,
+        style: TextStyle(
+          color: isActive ? AppColors.textPrimary : AppColors.textSecondary,
+          fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+      onTap: onTap,
+      contentPadding: EdgeInsets.zero,
     );
   }
 }
