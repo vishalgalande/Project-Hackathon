@@ -106,12 +106,7 @@ class _LandingPageState extends State<LandingPage> {
                 _NavLink(
                   text: 'Transit Tracker',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Transit Tracker feature - Navigate to web version'),
-                      ),
-                    );
+                    context.go('/tracker');
                   },
                 ),
               ],
@@ -319,10 +314,7 @@ class _LandingPageState extends State<LandingPage> {
               ),
               OutlinedButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Navigate to Transit Tracker')),
-                  );
+                  context.go('/tracker');
                 },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textPrimary,
