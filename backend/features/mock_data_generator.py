@@ -5,6 +5,8 @@ Generates realistic transport data for 50+ countries
 
 import random
 import math
+import requests
+import json
 from datetime import datetime, timedelta
 
 class MockDataGenerator:
@@ -341,6 +343,23 @@ class MockDataGenerator:
                         end_lat = city["lat"] + random.uniform(-0.1, 0.1)
                         end_lng = city["lng"] + random.uniform(-0.1, 0.1)
 
+                        path = [
+                            {"lat": start_lat, "lng": start_lng},
+                            {"lat": end_lat, "lng": end_lng}
+                        ]
+
+                        # REALISTIC ROUTE GENERATION (OSRM)
+                        # Only apply to 'Bus' in Mumbai/Delhi to keep startup fast and demo effective
+                        if transport_type == "Bus" and city["name"] in ["Mumbai", "Delhi", "Trivandrum", "Kochi"] and i < 3:
+                            try:
+                                real_path = self._fetch_route_geometry((start_lat, start_lng), (end_lat, end_lng))
+                                if real_path:
+                                    path = real_path
+                                    # Update stops to be along the real path
+                                    # (Simplification: We keep random stops but at least the line is real)
+                            except Exception as e:
+                                print(f"OSRM Fetch Failed for {route_name}: {e}")
+
                         # Generate route stops first to get start/end names
                         num_stops = random.randint(8, 15)
                         stops = []
@@ -349,9 +368,20 @@ class MockDataGenerator:
                             # Use actual stop names from city data
                             selected_stops = random.sample(city_stops, num_stops)
                             for j, stop_name in enumerate(selected_stops):
+                                # Interpolate simple position for stops
                                 t = j / (num_stops - 1) if num_stops > 1 else 0
-                                stop_lat = start_lat + (end_lat - start_lat) * t
-                                stop_lng = start_lng + (end_lng - start_lng) * t
+                                if len(path) > 2:
+                                     # Snapping stops to simplified path index would be better 
+                                     # but for now linear interp between bounding box is okay for mock
+                                     # or just putting them on the line?
+                                     # Let's keep simple interpolation for stops themselves to ensure they appear
+                                     idx = int(t * (len(path) - 1))
+                                     stop_lat = path[idx]["lat"]
+                                     stop_lng = path[idx]["lng"]
+                                else:
+                                     stop_lat = start_lat + (end_lat - start_lat) * t
+                                     stop_lng = start_lng + (end_lng - start_lng) * t
+                                
                                 stops.append({
                                     "name": stop_name,
                                     "lat": stop_lat,
@@ -362,8 +392,14 @@ class MockDataGenerator:
                             # Fallback to generic names if no city stops available
                             for j in range(num_stops):
                                 t = j / (num_stops - 1) if num_stops > 1 else 0
-                                stop_lat = start_lat + (end_lat - start_lat) * t
-                                stop_lng = start_lng + (end_lng - start_lng) * t
+                                if len(path) > 2:
+                                     idx = int(t * (len(path) - 1))
+                                     stop_lat = path[idx]["lat"]
+                                     stop_lng = path[idx]["lng"]
+                                else:
+                                     stop_lat = start_lat + (end_lat - start_lat) * t
+                                     stop_lng = start_lng + (end_lng - start_lng) * t
+
                                 stops.append({
                                     "name": f"Stop {j + 1}",
                                     "lat": stop_lat,
@@ -392,10 +428,7 @@ class MockDataGenerator:
                             "country_code": country_code,
                             "continent": continent,
                             "stops": stops,
-                            "path": [
-                                {"lat": start_lat, "lng": start_lng},
-                                {"lat": end_lat, "lng": end_lng}
-                            ],
+                            "path": path,
                             "active": True,
                             "frequency": f"{random.randint(5, 30)} mins"
                         }
@@ -404,6 +437,27 @@ class MockDataGenerator:
                         route_id += 1
         
         return routes
+
+    def _fetch_route_geometry(self, start, end):
+        """Fetch real road geometry from OSRM"""
+        # Coordinate format: lat, lng
+        # OSRM expects: lon,lat
+        try:
+            base_url = "http://router.project-osrm.org/route/v1/driving"
+            coordinates = f"{start[1]},{start[0]};{end[1]},{end[0]}"
+            url = f"{base_url}/{coordinates}?overview=full&geometries=geojson"
+            
+            response = requests.get(url, timeout=2) # Short timeout
+            if response.status_code == 200:
+                data = response.json()
+                if data['code'] == 'Ok':
+                    # Extract coordinates
+                    coords = data['routes'][0]['geometry']['coordinates']
+                    # Convert [[lon, lat], ...] to [{"lat": lat, "lng": lng}, ...]
+                    return [{"lat": c[1], "lng": c[0]} for c in coords]
+        except:
+            pass # Fail silently fall back to straight line
+        return None
     
     def _generate_vehicles(self):
         """Generate vehicle positions for active routes"""

@@ -112,7 +112,7 @@ backend/
 ### Frontend (Web)
 ```
 frontend/web/
-├── index.html                   # Main HTML structure
+│   ├── home.html                    # Main HTML structure
 ├── styles.css                   # Design system
 ├── api.js                       # API communication
 └── app.js                       # Application logic
