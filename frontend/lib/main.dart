@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'features/landing_page.dart';
 import 'features/auth/auth_dialogs.dart';
 import 'pages/command_center_page.dart';
@@ -11,6 +12,16 @@ import 'pages/intel_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables (optional - app works without it but chatbot won't)
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    // .env file not found - chatbot will show error message
+    debugPrint(
+        'Warning: .env file not loaded. Chatbot requires GEMINI_API_KEY.');
+  }
+
   if (kIsWeb) {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
