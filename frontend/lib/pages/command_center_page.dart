@@ -20,9 +20,9 @@ class CommandCenterPage extends ConsumerStatefulWidget {
 class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   final MapController _mapController = MapController();
   late DraggableScrollableController _sheetController;
-  // Center of India (approximately)
-  final LatLng _initialCenter = const LatLng(20.5937, 78.9629);
-  final double _initialZoom = 5.0; // Zoom out to see all India
+  // Center of Jaipur
+  final LatLng _initialCenter = const LatLng(26.9124, 75.7873);
+  final double _initialZoom = 12.0;
   bool _isDarkMode = false; // Add state for map style
   String _currentState = ''; // Current state/region being viewed
 
@@ -179,13 +179,13 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
             options: MapOptions(
               initialCenter: _initialCenter,
               initialZoom: _initialZoom,
-              minZoom: 4,
+              minZoom: 8, // Restrict min zoom to keep Rajasthan in view
               maxZoom: 18,
-              // India bounds - prevents panning outside India
-              // maxBounds: LatLngBounds(
-              //   const LatLng(6.0, 68.0),   // Southwest
-              //   const LatLng(35.5, 97.5),  // Northeast
-              // ),
+              // Rajasthan bounds
+              maxBounds: LatLngBounds(
+                const LatLng(23.0, 69.0),   // Southwest
+                const LatLng(30.5, 78.5),   // Northeast
+              ),
               interactionOptions: const InteractionOptions(
                 flags: InteractiveFlag.all,
                 enableScrollWheel: true,
