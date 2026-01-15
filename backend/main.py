@@ -13,6 +13,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Import feature blueprints
 from features.routes import routes_bp
 from features.tracking import tracking_bp
+from features.reporting import reporting_bp
 
 # Create Flask app
 app = Flask(__name__)
@@ -23,6 +24,7 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 # Register blueprints
 app.register_blueprint(routes_bp)
 app.register_blueprint(tracking_bp)
+app.register_blueprint(reporting_bp)
 
 @app.route('/')
 def home():

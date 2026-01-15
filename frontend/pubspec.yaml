@@ -24,7 +24,8 @@ dependencies:
   # Animations
   flutter_animate: ^4.3.0
   
-  # Maps (OpenStreetMap)
+  # Maps
+
   flutter_map: ^6.1.0
   latlong2: ^0.9.0
   

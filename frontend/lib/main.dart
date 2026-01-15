@@ -9,6 +9,7 @@ import 'features/landing_page.dart';
 import 'features/auth/auth_dialogs.dart';
 import 'pages/command_center_page.dart';
 import 'pages/intel_page.dart';
+import 'features/transit_tracker_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -70,6 +71,11 @@ final GoRouter _router = GoRouter(
         final zoneId = state.pathParameters['zoneId'] ?? '';
         return IntelPage(zoneId: zoneId);
       },
+    ),
+    GoRoute(
+      path: '/tracker',
+      name: 'tracker',
+      builder: (context, state) => const TransitTrackerScreen(),
     ),
   ],
 );
