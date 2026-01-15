@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../app/theme.dart';
 import '../app/providers.dart';
 import '../models/zone.dart';
+import '../services/tracking_service.dart';
 
 /// Page 2: Real Map View (OpenStreetMap) - EXPANDED DATASET
 class CommandCenterPage extends ConsumerStatefulWidget {
@@ -124,9 +125,53 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   @override
   Widget build(BuildContext context) {
     final zones = ref.watch(zonesProvider);
+    final userLocation = ref.watch(userLocationProvider);
+    final appState = ref.watch(appStateProvider);
+
+    // Listen for zone warnings
+    ref.listen(appStateProvider, (previous, next) {
+      if (next.showWarning && next.warningMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.white),
+                const SizedBox(width: 12),
+                Text(next.warningMessage!),
+              ],
+            ),
+            backgroundColor: AppColors.dangerZone,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
 
     return Scaffold(
       extendBodyBehindAppBar: true,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          final trackingService = ref.read(trackingServiceProvider);
+          if (userLocation.isTracking) {
+            trackingService.stopSimulation();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Simulation Stopped')),
+            );
+          } else {
+            trackingService.startSimulation();
+            // Move map to start of Jaipur simulation
+            _mapController.move(const LatLng(26.9114, 75.8190), 14);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Simulation Started: Jaipur Route')),
+            );
+          }
+        },
+        backgroundColor: userLocation.isTracking ? Colors.red : AppColors.primary,
+        icon: Icon(userLocation.isTracking ? Icons.stop : Icons.play_arrow),
+        label: Text(userLocation.isTracking ? 'Stop Tracking' : 'Start Simulation'),
+      ),
       body: Stack(
         children: [
           FlutterMap(
@@ -180,17 +225,40 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
               ),
               PolygonLayer(polygons: _getVisiblePolygons(zones)),
               MarkerLayer(
-                markers: _getVisibleZones(zones).map((zone) {
-                  return Marker(
-                    point: LatLng(zone.centerLat, zone.centerLng),
-                    width: 36,
-                    height: 36,
-                    child: GestureDetector(
-                      onTap: () => _showZoneDetails(zone),
-                      child: _buildMarkerIcon(zone.type),
+                markers: [
+                  ..._getVisibleZones(zones).map((zone) {
+                    return Marker(
+                      point: LatLng(zone.centerLat, zone.centerLng),
+                      width: 36,
+                      height: 36,
+                      child: GestureDetector(
+                        onTap: () => _showZoneDetails(zone),
+                        child: _buildMarkerIcon(zone.type),
+                      ),
+                    );
+                  }),
+                  // User Location Marker
+                  Marker(
+                    point: LatLng(userLocation.latitude, userLocation.longitude),
+                    width: 40,
+                    height: 40,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.blueAccent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blueAccent.withOpacity(0.5),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.navigation, color: Colors.white, size: 20),
                     ),
-                  );
-                }).toList(),
+                  ),
+                ],
               ),
             ],
           ),
