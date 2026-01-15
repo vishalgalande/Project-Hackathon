@@ -88,11 +88,20 @@ class IntelPage extends ConsumerWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  zone.type == 'safe'
-                                      ? '95'
-                                      : zone.type == 'caution'
-                                          ? '60'
-                                          : '20',
+                                  // Dynamic score: base score minus penalty for reports
+                                  () {
+                                    int baseScore = zone.type == 'safe'
+                                        ? 95
+                                        : zone.type == 'caution'
+                                            ? 60
+                                            : 20;
+                                    // Reduce score by 3 points per negative report
+                                    int penalty =
+                                        zone.negativeFeedbackCount * 3;
+                                    int finalScore =
+                                        (baseScore - penalty).clamp(0, 100);
+                                    return '$finalScore';
+                                  }(),
                                   style: TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.w900,
