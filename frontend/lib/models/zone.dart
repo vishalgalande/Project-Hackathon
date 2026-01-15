@@ -97,6 +97,76 @@ class Zone extends Equatable {
       ];
 }
 
+/// City cluster for aggregated zone display when zoomed out
+class CityCluster {
+  final String cityId;
+  final String cityName;
+  final double centerLat;
+  final double centerLng;
+  final int zoneCount;
+  final int avgCrimeRate;
+  final String dominantType; // 'safe', 'caution', or 'danger'
+
+  const CityCluster({
+    required this.cityId,
+    required this.cityName,
+    required this.centerLat,
+    required this.centerLng,
+    required this.zoneCount,
+    required this.avgCrimeRate,
+    required this.dominantType,
+  });
+
+  /// Create a cluster from a list of zones
+  factory CityCluster.fromZones(
+      String cityId, String cityName, List<Zone> zones) {
+    if (zones.isEmpty) {
+      return CityCluster(
+        cityId: cityId,
+        cityName: cityName,
+        centerLat: 0,
+        centerLng: 0,
+        zoneCount: 0,
+        avgCrimeRate: 0,
+        dominantType: 'safe',
+      );
+    }
+
+    // Calculate center
+    final avgLat =
+        zones.map((z) => z.centerLat).reduce((a, b) => a + b) / zones.length;
+    final avgLng =
+        zones.map((z) => z.centerLng).reduce((a, b) => a + b) / zones.length;
+
+    // Calculate average crime rate
+    final avgCrime =
+        zones.map((z) => z.crimeRate).reduce((a, b) => a + b) ~/ zones.length;
+
+    // Count zone types
+    int dangerCount = zones.where((z) => z.type == 'danger').length;
+    int cautionCount = zones.where((z) => z.type == 'caution').length;
+    int safeCount = zones.where((z) => z.type == 'safe').length;
+
+    // Determine dominant type
+    String dominant = 'safe';
+    if (dangerCount > 0) {
+      dominant = 'danger'; // Any danger zone makes it dangerous
+    } else if (cautionCount > safeCount) {
+      dominant = 'caution';
+    }
+
+    return CityCluster(
+      cityId: cityId,
+      cityName: cityName,
+      centerLat: avgLat,
+      centerLng: avgLng,
+      zoneCount: zones.length,
+      avgCrimeRate: avgCrime,
+      dominantType: dominant,
+    );
+  }
+}
+
 /// Expanded Mock zones for All India
 class MockZones {
   static const List<Zone> allIndiaZones = [
@@ -2046,5 +2116,61 @@ class MockZones {
 
   // Legacy accessor for backward compatibility
   static const List<Zone> jaipurZones = allIndiaZones;
-}
 
+  /// Get city clusters from all zones
+  static List<CityCluster> getCityClusters() {
+    // Group zones by city prefix (e.g., 'mum_', 'blr_', 'del_')
+    final Map<String, List<Zone>> cityGroups = {};
+    final Map<String, String> cityNames = {
+      'd': 'Delhi NCR',
+      'ncr': 'Delhi NCR',
+      'mum': 'Mumbai',
+      'blr': 'Bangalore',
+      'che': 'Chennai',
+      'kol': 'Kolkata',
+      'hyd': 'Hyderabad',
+      'pne': 'Pune',
+      'ahm': 'Ahmedabad',
+      'jai': 'Jaipur',
+      'lko': 'Lucknow',
+      'chd': 'Chandigarh',
+      'goa': 'Goa',
+      'koc': 'Kochi',
+      'var': 'Varanasi',
+      'agr': 'Agra',
+      'deh': 'Dehradun',
+      'mys': 'Mysore',
+      'guw': 'Guwahati',
+      'pat': 'Patna',
+      'ran': 'Ranchi',
+      'bhu': 'Bhubaneswar',
+      'rai': 'Raipur',
+      'nag': 'Nagpur',
+      'uda': 'Udaipur',
+      'jod': 'Jodhpur',
+      'vad': 'Vadodara',
+      'raj': 'Rajkot',
+      'sri': 'Srinagar',
+      'sim': 'Shimla',
+      'man': 'Manali',
+      'shi': 'Shillong',
+    };
+
+    for (final zone in allIndiaZones) {
+      // Extract city prefix from zone ID
+      final prefix = zone.id.split('_').first;
+      final cityName = cityNames[prefix] ?? prefix.toUpperCase();
+
+      cityGroups.putIfAbsent(cityName, () => []).add(zone);
+    }
+
+    // Create clusters from groups
+    return cityGroups.entries.map((entry) {
+      return CityCluster.fromZones(
+        entry.key.toLowerCase().replaceAll(' ', '_'),
+        entry.key,
+        entry.value,
+      );
+    }).toList();
+  }
+}

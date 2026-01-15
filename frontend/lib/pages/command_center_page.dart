@@ -25,6 +25,10 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   final double _initialZoom = 5.0; // Zoom out to see all India
   bool _isDarkMode = false; // Add state for map style
   String _currentState = ''; // Current state/region being viewed
+  bool _mapReady = false; // Track if map controller is ready
+  double _currentZoom = 5.0; // Track current zoom level for clustering
+  static const double _clusterZoomThreshold =
+      8.0; // Show clusters below this zoom
 
   /// Detect the state/region based on map center coordinates
   String _detectState(double lat, double lng) {
@@ -65,7 +69,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
       [22.25, 22.4, 73.15, 73.3, 'Vadodara'],
       [32.7, 32.85, 74.8, 75.0, 'Jammu'],
       [34.05, 34.15, 74.75, 74.85, 'Srinagar'],
-      
+
       // === STATES (larger regions) ===
       // North India
       [28.0, 30.5, 74.5, 77.5, 'Punjab & Haryana'],
@@ -102,7 +106,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
       final minLng = region[2] as double;
       final maxLng = region[3] as double;
       final stateName = region[4] as String;
-      
+
       if (lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng) {
         return stateName;
       }
@@ -168,9 +172,11 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
             );
           }
         },
-        backgroundColor: userLocation.isTracking ? Colors.red : AppColors.primary,
+        backgroundColor:
+            userLocation.isTracking ? Colors.red : AppColors.primary,
         icon: Icon(userLocation.isTracking ? Icons.stop : Icons.play_arrow),
-        label: Text(userLocation.isTracking ? 'Stop Tracking' : 'Start Simulation'),
+        label: Text(
+            userLocation.isTracking ? 'Stop Tracking' : 'Start Simulation'),
       ),
       body: Stack(
         children: [
@@ -191,12 +197,18 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                 enableScrollWheel: true,
                 pinchZoomThreshold: 0.3,
               ),
+              onMapReady: () {
+                setState(() {
+                  _mapReady = true;
+                });
+              },
               onPositionChanged: (position, hasGesture) {
                 // Detect current state based on map center
                 final center = position.center;
                 final zoom = position.zoom;
                 if (center != null && zoom != null && zoom > 7) {
-                  final newState = _detectState(center.latitude, center.longitude);
+                  final newState =
+                      _detectState(center.latitude, center.longitude);
                   if (newState != _currentState) {
                     setState(() {
                       _currentState = newState;
@@ -210,7 +222,9 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                   }
                 }
                 // Trigger rebuild for zone filtering
-                setState(() {});
+                setState(() {
+                  _currentZoom = position.zoom ?? _currentZoom;
+                });
               },
               onTap: (_, __) => {},
             ),
@@ -223,23 +237,54 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                 userAgentPackageName: 'com.example.safezone',
                 subdomains: const ['a', 'b', 'c'],
               ),
-              PolygonLayer(polygons: _getVisiblePolygons(zones)),
-              MarkerLayer(
-                markers: [
-                  ..._getVisibleZones(zones).map((zone) {
+              // Show individual zones when zoomed in, clusters when zoomed out
+              if (_currentZoom >= _clusterZoomThreshold) ...[
+                PolygonLayer(polygons: _getVisiblePolygons(zones)),
+                MarkerLayer(
+                  markers: [
+                    ..._getVisibleZones(zones).map((zone) {
+                      return Marker(
+                        point: LatLng(zone.centerLat, zone.centerLng),
+                        width: 36,
+                        height: 36,
+                        child: GestureDetector(
+                          onTap: () => _showZoneDetails(zone),
+                          child: _buildMarkerIcon(zone.type),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ] else ...[
+                // Show city clusters when zoomed out
+                MarkerLayer(
+                  markers: MockZones.getCityClusters().map((cluster) {
                     return Marker(
-                      point: LatLng(zone.centerLat, zone.centerLng),
-                      width: 36,
-                      height: 36,
+                      point: LatLng(cluster.centerLat, cluster.centerLng),
+                      width: 60,
+                      height: 60,
                       child: GestureDetector(
-                        onTap: () => _showZoneDetails(zone),
-                        child: _buildMarkerIcon(zone.type),
+                        onTap: () {
+                          // Zoom into the city
+                          if (_mapReady) {
+                            _mapController.move(
+                              LatLng(cluster.centerLat, cluster.centerLng),
+                              10,
+                            );
+                          }
+                        },
+                        child: _buildClusterMarker(cluster),
                       ),
                     );
-                  }),
-                  // User Location Marker
+                  }).toList(),
+                ),
+              ],
+              // User Location Marker (always visible)
+              MarkerLayer(
+                markers: [
                   Marker(
-                    point: LatLng(userLocation.latitude, userLocation.longitude),
+                    point:
+                        LatLng(userLocation.latitude, userLocation.longitude),
                     width: 40,
                     height: 40,
                     child: Container(
@@ -255,7 +300,8 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.navigation, color: Colors.white, size: 20),
+                      child: const Icon(Icons.navigation,
+                          color: Colors.white, size: 20),
                     ),
                   ),
                 ],
@@ -272,7 +318,8 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
               child: Center(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: _isDarkMode
@@ -376,8 +423,11 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                     // Right Actions
                     Row(
                       children: [
-                        _buildHeaderAction(Icons.my_location,
-                            () => _mapController.move(_initialCenter, 5)),
+                        _buildHeaderAction(
+                            Icons.my_location,
+                            _mapReady
+                                ? () => _mapController.move(_initialCenter, 5)
+                                : () {}),
                         const SizedBox(width: 12),
                         _buildHeaderAction(
                             _isDarkMode
@@ -403,21 +453,24 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
               children: [
                 // Zoom In Button
                 GestureDetector(
-                  onTap: () {
-                    final currentZoom = _mapController.camera.zoom;
-                    if (currentZoom < 18) {
-                      _mapController.move(
-                        _mapController.camera.center,
-                        currentZoom + 1,
-                      );
-                    }
-                  },
+                  onTap: _mapReady
+                      ? () {
+                          final currentZoom = _mapController.camera.zoom;
+                          if (currentZoom < 18) {
+                            _mapController.move(
+                              _mapController.camera.center,
+                              currentZoom + 1,
+                            );
+                          }
+                        }
+                      : null,
                   child: Container(
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
                       color: _isDarkMode ? Colors.black87 : Colors.white,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(12)),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.15),
@@ -439,21 +492,24 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                 ),
                 // Zoom Out Button
                 GestureDetector(
-                  onTap: () {
-                    final currentZoom = _mapController.camera.zoom;
-                    if (currentZoom > 4) {
-                      _mapController.move(
-                        _mapController.camera.center,
-                        currentZoom - 1,
-                      );
-                    }
-                  },
+                  onTap: _mapReady
+                      ? () {
+                          final currentZoom = _mapController.camera.zoom;
+                          if (currentZoom > 4) {
+                            _mapController.move(
+                              _mapController.camera.center,
+                              currentZoom - 1,
+                            );
+                          }
+                        }
+                      : null,
                   child: Container(
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
                       color: _isDarkMode ? Colors.black87 : Colors.white,
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                      borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(12)),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.15),
@@ -528,7 +584,6 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
     }).toList();
   }
 
-
   Widget _buildMarkerIcon(String type) {
     Color color;
     IconData icon;
@@ -560,6 +615,79 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
         ],
       ),
       child: Icon(icon, color: color, size: 20),
+    );
+  }
+
+  /// Build cluster marker for city-level view
+  Widget _buildClusterMarker(CityCluster cluster) {
+    Color color;
+    switch (cluster.dominantType.toLowerCase()) {
+      case 'danger':
+        color = AppColors.dangerZone;
+        break;
+      case 'caution':
+        color = AppColors.cautionZone;
+        break;
+      case 'safe':
+      default:
+        color = AppColors.safeZone;
+        break;
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Main circle
+        Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.4),
+                blurRadius: 8,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              cluster.cityName.length > 3
+                  ? cluster.cityName.substring(0, 3).toUpperCase()
+                  : cluster.cityName.toUpperCase(),
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+              ),
+            ),
+          ),
+        ),
+        // Zone count badge
+        Positioned(
+          top: 0,
+          right: 0,
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: color, width: 1),
+            ),
+            child: Text(
+              '${cluster.zoneCount}',
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 9,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -761,30 +889,36 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                                       Wrap(
                                         spacing: 6,
                                         runSpacing: 4,
-                                        children: zone.warnings.map((warning) =>
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: zone.type.zoneColor.withOpacity(0.15),
-                                              borderRadius: BorderRadius.circular(12),
-                                              border: Border.all(
-                                                color: zone.type.zoneColor.withOpacity(0.3),
-                                                width: 1,
+                                        children: zone.warnings
+                                            .map(
+                                              (warning) => Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 4,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: zone.type.zoneColor
+                                                      .withOpacity(0.15),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  border: Border.all(
+                                                    color: zone.type.zoneColor
+                                                        .withOpacity(0.3),
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  warning,
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: zone.type.zoneColor,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                            child: Text(
-                                              warning,
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w500,
-                                                color: zone.type.zoneColor,
-                                              ),
-                                            ),
-                                          ),
-                                        ).toList(),
+                                            )
+                                            .toList(),
                                       ),
                                     ],
                                   ],
