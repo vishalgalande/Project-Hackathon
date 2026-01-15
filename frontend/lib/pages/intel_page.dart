@@ -292,7 +292,7 @@ class IntelPage extends ConsumerWidget {
       style: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
+        color: Colors.black87, // Force Black
       ),
     );
   }
@@ -317,7 +317,13 @@ class IntelPage extends ConsumerWidget {
           children: [
             Icon(Icons.info_outline, color: color, size: 20),
             const SizedBox(width: 12),
-            Expanded(child: Text(warning)),
+            Expanded(child: Text(
+              warning,
+              style: const TextStyle(
+                color: Colors.black87, // Force Black
+                fontWeight: FontWeight.w500,
+              ),
+            )),
           ],
         ),
       ),
@@ -380,9 +386,12 @@ class IntelPage extends ConsumerWidget {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Report submitted! Total reports: $newCount'),
+            content: Text(
+              'Report submitted! Total reports: $newCount',
+              style: const TextStyle(color: Colors.white), // Force white text
+            ),
             backgroundColor:
-                newCount > 10 ? AppColors.dangerZone : Colors.black87,
+                newCount > 10 ? AppColors.dangerZone : Colors.grey.shade900,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -467,6 +476,7 @@ class _ModernStatCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
+              color: Colors.black87, // Force Black
             ),
           ),
           Text(
@@ -474,6 +484,7 @@ class _ModernStatCard extends StatelessWidget {
             style: const TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
+              color: Colors.black87, // Force Black
             ),
           ),
           const SizedBox(height: 4),
@@ -481,7 +492,7 @@ class _ModernStatCard extends StatelessWidget {
             subtitle,
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey.shade500,
+              color: Colors.grey.shade600, // Dark grey
             ),
           ),
         ],

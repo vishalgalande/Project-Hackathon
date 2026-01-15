@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../app/theme.dart';
 import '../app/providers.dart';
 import '../models/zone.dart';
+import '../services/tracking_service.dart';
 
 /// Page 2: Real Map View (OpenStreetMap) - EXPANDED DATASET
 class CommandCenterPage extends ConsumerStatefulWidget {
@@ -18,36 +19,159 @@ class CommandCenterPage extends ConsumerStatefulWidget {
 
 class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   final MapController _mapController = MapController();
+  late DraggableScrollableController _sheetController;
   // Center of India (approximately)
   final LatLng _initialCenter = const LatLng(20.5937, 78.9629);
   final double _initialZoom = 5.0; // Zoom out to see all India
   bool _isDarkMode = false; // Add state for map style
+  String _currentState = ''; // Current state/region being viewed
+
+  /// Detect the state/region based on map center coordinates
+  String _detectState(double lat, double lng) {
+    // State boundaries defined by approximate lat/lng ranges
+    // Format: [minLat, maxLat, minLng, maxLng, stateName]
+    // IMPORTANT: Cities (smaller regions) MUST come BEFORE states
+    final stateRegions = [
+      // === CITIES FIRST (most specific) ===
+      [28.4, 28.9, 76.8, 77.5, 'Delhi NCR'],
+      [18.85, 19.35, 72.75, 73.05, 'Mumbai'],
+      [12.85, 13.15, 77.45, 77.75, 'Bangalore'],
+      [12.95, 13.25, 80.15, 80.35, 'Chennai'],
+      [22.45, 22.7, 88.25, 88.5, 'Kolkata'],
+      [17.3, 17.55, 78.35, 78.6, 'Hyderabad'],
+      [23.0, 23.15, 72.5, 72.7, 'Ahmedabad'],
+      [18.45, 18.65, 73.75, 74.0, 'Pune'],
+      [26.8, 27.0, 75.7, 75.95, 'Jaipur'],
+      [30.65, 30.85, 76.7, 76.9, 'Chandigarh'],
+      [26.0, 26.2, 91.65, 91.85, 'Guwahati'],
+      [25.55, 25.7, 91.85, 92.0, 'Shillong'],
+      [21.1, 21.3, 79.0, 79.2, 'Nagpur'],
+      [25.55, 25.7, 84.95, 85.1, 'Patna'],
+      [23.3, 23.5, 85.25, 85.45, 'Ranchi'],
+      [20.25, 20.35, 85.8, 85.95, 'Bhubaneswar'],
+      [21.15, 21.3, 81.55, 81.7, 'Raipur'],
+      [22.65, 22.85, 88.35, 88.5, 'Howrah'],
+      [15.3, 15.55, 73.75, 74.05, 'Goa'],
+      [30.3, 30.4, 78.0, 78.15, 'Dehradun'],
+      [24.55, 24.7, 73.65, 73.85, 'Udaipur'],
+      [30.0, 30.15, 78.25, 78.35, 'Rishikesh'],
+      [31.05, 31.15, 77.1, 77.2, 'Shimla'],
+      [32.25, 32.35, 76.3, 76.4, 'Manali'],
+      [12.25, 12.35, 76.6, 76.7, 'Mysore'],
+      [9.9, 10.0, 78.1, 78.2, 'Madurai'],
+      [27.15, 27.25, 78.0, 78.1, 'Agra'],
+      [26.25, 26.35, 73.0, 73.1, 'Jodhpur'],
+      [22.25, 22.4, 70.75, 70.9, 'Rajkot'],
+      [22.25, 22.4, 73.15, 73.3, 'Vadodara'],
+      [32.7, 32.85, 74.8, 75.0, 'Jammu'],
+      [34.05, 34.15, 74.75, 74.85, 'Srinagar'],
+      
+      // === STATES (larger regions) ===
+      // North India
+      [28.0, 30.5, 74.5, 77.5, 'Punjab & Haryana'],
+      [29.5, 31.5, 77.5, 81.0, 'Uttarakhand'],
+      [25.5, 30.5, 79.5, 84.5, 'Uttar Pradesh'],
+      [30.0, 35.5, 73.5, 80.5, 'Jammu & Kashmir'],
+      // Rajasthan
+      [23.0, 30.0, 69.5, 78.5, 'Rajasthan'],
+      // West India
+      [15.5, 22.0, 72.5, 80.5, 'Maharashtra'],
+      [20.0, 24.5, 68.0, 74.5, 'Gujarat'],
+      // South India
+      [11.0, 18.5, 74.0, 78.5, 'Karnataka'],
+      [8.0, 13.5, 77.0, 80.5, 'Tamil Nadu'],
+      [8.0, 12.8, 74.5, 77.5, 'Kerala'],
+      [13.5, 19.5, 77.5, 84.5, 'Telangana & Andhra Pradesh'],
+      // East India
+      [21.5, 27.5, 85.5, 89.0, 'West Bengal'],
+      [19.5, 22.5, 82.0, 87.5, 'Odisha'],
+      [24.0, 27.5, 83.5, 88.5, 'Bihar'],
+      [21.5, 25.5, 83.5, 88.0, 'Jharkhand'],
+      [18.0, 24.5, 80.0, 84.5, 'Chhattisgarh'],
+      [19.5, 25.5, 74.0, 82.5, 'Madhya Pradesh'],
+      // Northeast India
+      [24.0, 28.5, 89.5, 97.5, 'Northeast India'],
+      [25.5, 28.0, 89.5, 96.5, 'Assam'],
+      [25.0, 26.5, 91.0, 92.5, 'Meghalaya'],
+    ];
+
+    // Check each region - cities come first so they match before states
+    for (final region in stateRegions) {
+      final minLat = region[0] as double;
+      final maxLat = region[1] as double;
+      final minLng = region[2] as double;
+      final maxLng = region[3] as double;
+      final stateName = region[4] as String;
+      
+      if (lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng) {
+        return stateName;
+      }
+    }
+    return 'India';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _sheetController = DraggableScrollableController();
+  }
+
+  @override
+  void dispose() {
+    _sheetController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final zones = ref.watch(zonesProvider);
+    final userLocation = ref.watch(userLocationProvider);
+    final appState = ref.watch(appStateProvider);
 
-    final zonePolygons = zones.map((zone) {
-      return Polygon(
-        points: _createSquareZone(
-            LatLng(zone.centerLat, zone.centerLng), zone.radius * 2.0),
-        // Adjust opacity based on mode
-        color: zone.type.zoneColor.withOpacity(_isDarkMode ? 0.2 : 0.1),
-        borderColor: zone.type.zoneColor,
-        borderStrokeWidth: 2,
-        isFilled: true,
-        label: zone.name,
-        labelStyle: TextStyle(
-          color: Colors.black87,
-          fontWeight: FontWeight.bold,
-          fontSize: 10,
-          backgroundColor: Colors.white.withOpacity(0.7),
-        ),
-      );
-    }).toList();
+    // Listen for zone warnings
+    ref.listen(appStateProvider, (previous, next) {
+      if (next.showWarning && next.warningMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.white),
+                const SizedBox(width: 12),
+                Text(next.warningMessage!),
+              ],
+            ),
+            backgroundColor: AppColors.dangerZone,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
 
     return Scaffold(
       extendBodyBehindAppBar: true,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          final trackingService = ref.read(trackingServiceProvider);
+          if (userLocation.isTracking) {
+            trackingService.stopSimulation();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Simulation Stopped')),
+            );
+          } else {
+            trackingService.startSimulation();
+            // Move map to start of Jaipur simulation
+            _mapController.move(const LatLng(26.9114, 75.8190), 14);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Simulation Started: Jaipur Route')),
+            );
+          }
+        },
+        backgroundColor: userLocation.isTracking ? Colors.red : AppColors.primary,
+        icon: Icon(userLocation.isTracking ? Icons.stop : Icons.play_arrow),
+        label: Text(userLocation.isTracking ? 'Stop Tracking' : 'Start Simulation'),
+      ),
       body: Stack(
         children: [
           FlutterMap(
@@ -55,11 +179,39 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
             options: MapOptions(
               initialCenter: _initialCenter,
               initialZoom: _initialZoom,
-              minZoom: 4, // Allow zoom out to see all India
+              minZoom: 4,
               maxZoom: 18,
+              // India bounds - prevents panning outside India
+              // maxBounds: LatLngBounds(
+              //   const LatLng(6.0, 68.0),   // Southwest
+              //   const LatLng(35.5, 97.5),  // Northeast
+              // ),
               interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all, // Enable all gestures including pinch zoom
+                flags: InteractiveFlag.all,
+                enableScrollWheel: true,
+                pinchZoomThreshold: 0.3,
               ),
+              onPositionChanged: (position, hasGesture) {
+                // Detect current state based on map center
+                final center = position.center;
+                final zoom = position.zoom;
+                if (center != null && zoom != null && zoom > 7) {
+                  final newState = _detectState(center.latitude, center.longitude);
+                  if (newState != _currentState) {
+                    setState(() {
+                      _currentState = newState;
+                    });
+                  }
+                } else {
+                  if (_currentState != '') {
+                    setState(() {
+                      _currentState = '';
+                    });
+                  }
+                }
+                // Trigger rebuild for zone filtering
+                setState(() {});
+              },
               onTap: (_, __) => {},
             ),
             children: [
@@ -71,22 +223,94 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                 userAgentPackageName: 'com.example.safezone',
                 subdomains: const ['a', 'b', 'c'],
               ),
-              PolygonLayer(polygons: zonePolygons),
+              PolygonLayer(polygons: _getVisiblePolygons(zones)),
               MarkerLayer(
-                markers: zones.map((zone) {
-                  return Marker(
-                    point: LatLng(zone.centerLat, zone.centerLng),
-                    width: 36,
-                    height: 36,
-                    child: GestureDetector(
-                      onTap: () => _showZoneDetails(zone),
-                      child: _buildMarkerIcon(zone.type),
+                markers: [
+                  ..._getVisibleZones(zones).map((zone) {
+                    return Marker(
+                      point: LatLng(zone.centerLat, zone.centerLng),
+                      width: 36,
+                      height: 36,
+                      child: GestureDetector(
+                        onTap: () => _showZoneDetails(zone),
+                        child: _buildMarkerIcon(zone.type),
+                      ),
+                    );
+                  }),
+                  // User Location Marker
+                  Marker(
+                    point: LatLng(userLocation.latitude, userLocation.longitude),
+                    width: 40,
+                    height: 40,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.blueAccent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blueAccent.withOpacity(0.5),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.navigation, color: Colors.white, size: 20),
                     ),
-                  );
-                }).toList(),
+                  ),
+                ],
               ),
             ],
           ),
+
+          // State Indicator Badge (shows when zoomed in)
+          if (_currentState.isNotEmpty)
+            Positioned(
+              top: 100,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: _isDarkMode
+                          ? [Colors.indigo.shade900, Colors.purple.shade900]
+                          : [Colors.indigo.shade600, Colors.purple.shade600],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.indigo.withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _currentState,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // ... Header Positioned ...
           Positioned(
@@ -249,7 +473,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
           ),
 
           // Bottom Sheet
-          _buildBottomPanel(zones),
+          _buildBottomPanel(_getVisibleZones(zones)),
         ],
       ),
     );
@@ -268,6 +492,42 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
       ),
     );
   }
+
+  /// Filter zones to only show those within the visible map bounds
+  List<Zone> _getVisibleZones(List<Zone> allZones) {
+    try {
+      final bounds = _mapController.camera.visibleBounds;
+      return allZones.where((zone) {
+        return bounds.contains(LatLng(zone.centerLat, zone.centerLng));
+      }).toList();
+    } catch (e) {
+      // MapController not ready yet, show all zones
+      return allZones;
+    }
+  }
+
+  /// Get polygons for visible zones only
+  List<Polygon> _getVisiblePolygons(List<Zone> allZones) {
+    final visibleZones = _getVisibleZones(allZones);
+    return visibleZones.map((zone) {
+      return Polygon(
+        points: _createSquareZone(
+            LatLng(zone.centerLat, zone.centerLng), zone.radius * 2.0),
+        color: zone.type.zoneColor.withOpacity(_isDarkMode ? 0.2 : 0.1),
+        borderColor: zone.type.zoneColor,
+        borderStrokeWidth: 2,
+        isFilled: true,
+        label: zone.name,
+        labelStyle: TextStyle(
+          color: Colors.black87,
+          fontWeight: FontWeight.bold,
+          fontSize: 10,
+          backgroundColor: Colors.white.withOpacity(0.7),
+        ),
+      );
+    }).toList();
+  }
+
 
   Widget _buildMarkerIcon(String type) {
     Color color;
@@ -316,9 +576,6 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   void _showZoneDetails(Zone zone) {
     context.push('/intel/${zone.id}');
   }
-
-  final DraggableScrollableController _sheetController =
-      DraggableScrollableController();
 
   Widget _buildBottomPanel(List<Zone> zones) {
     return DraggableScrollableSheet(
