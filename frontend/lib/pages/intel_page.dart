@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../app/theme.dart';
 import '../app/providers.dart';
 import '../models/zone.dart';
+import '../services/zone_service.dart';
 
 /// Page 3: Zone Details with Feedback Reporting
 class IntelPage extends ConsumerWidget {
@@ -87,11 +88,20 @@ class IntelPage extends ConsumerWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  zone.type == 'safe'
-                                      ? '95'
-                                      : zone.type == 'caution'
-                                          ? '60'
-                                          : '20',
+                                  // Dynamic score: base score minus penalty for reports
+                                  () {
+                                    int baseScore = zone.type == 'safe'
+                                        ? 95
+                                        : zone.type == 'caution'
+                                            ? 60
+                                            : 20;
+                                    // Reduce score by 3 points per negative report
+                                    int penalty =
+                                        zone.negativeFeedbackCount * 3;
+                                    int finalScore =
+                                        (baseScore - penalty).clamp(0, 100);
+                                    return '$finalScore';
+                                  }(),
                                   style: TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.w900,
@@ -269,11 +279,16 @@ class IntelPage extends ConsumerWidget {
                     ),
                   ),
 
-                  // Safety Tips
-                  if (zone.warnings.isNotEmpty) ...[
+                  // Safety Tips & User Reports
+                  if (zone.warnings.isNotEmpty ||
+                      zone.liveWarnings.isNotEmpty) ...[
                     const SizedBox(height: 32),
                     _buildSectionTitle('Advisories'),
                     const SizedBox(height: 16),
+                    // Show user-reported warnings first (live from Firebase)
+                    ...zone.liveWarnings.map(
+                        (w) => _buildAdvisoryItem(w, AppColors.dangerZone)),
+                    // Then show static warnings
                     ...zone.warnings
                         .map((w) => _buildAdvisoryItem(w, zoneColor)),
                   ]
@@ -317,7 +332,8 @@ class IntelPage extends ConsumerWidget {
           children: [
             Icon(Icons.info_outline, color: color, size: 20),
             const SizedBox(width: 12),
-            Expanded(child: Text(
+            Expanded(
+                child: Text(
               warning,
               style: const TextStyle(
                 color: Colors.black87, // Force Black
@@ -359,13 +375,13 @@ class IntelPage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             _buildReportOption(context, ref, zone, 'Theft / Pickpocketing',
-                Icons.run_circle_outlined),
+                Icons.run_circle_outlined, 'theft'),
             _buildReportOption(context, ref, zone, 'Harassment',
-                Icons.record_voice_over_outlined),
-            _buildReportOption(
-                context, ref, zone, 'Poor Lighting', Icons.lightbulb_outline),
+                Icons.record_voice_over_outlined, 'harassment'),
+            _buildReportOption(context, ref, zone, 'Poor Lighting',
+                Icons.lightbulb_outline, 'lighting'),
             _buildReportOption(context, ref, zone, 'Suspicious Activity',
-                Icons.visibility_outlined),
+                Icons.visibility_outlined, 'suspicious'),
             const SizedBox(height: 24),
           ],
         ),
@@ -374,27 +390,42 @@ class IntelPage extends ConsumerWidget {
   }
 
   Widget _buildReportOption(BuildContext context, WidgetRef ref, Zone zone,
-      String title, IconData icon) {
+      String title, IconData icon, String reportType) {
     return InkWell(
-      onTap: () {
-        // Increment feedback (In a real app, this would be an API call)
+      onTap: () async {
+        // Increment feedback count
         final newCount = zone.negativeFeedbackCount + 1;
 
-        // Simulating the update by locally modifying the mock list via provider
-        // (Just showing success message for this demo)
+        // Update Firebase with report type
+        try {
+          final service = ref.read(zoneServiceProvider);
+          await service.reportZone(zone.id, zone.cityId, newCount,
+              reportType: reportType);
 
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Report submitted! Total reports: $newCount',
-              style: const TextStyle(color: Colors.white), // Force white text
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                newCount > 10
+                    ? '⚠️ Zone marked as DANGER! Total reports: $newCount'
+                    : '✅ Report submitted! Total reports: $newCount',
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor:
+                  newCount > 10 ? AppColors.dangerZone : Colors.green.shade700,
+              behavior: SnackBarBehavior.floating,
             ),
-            backgroundColor:
-                newCount > 10 ? AppColors.dangerZone : Colors.grey.shade900,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+          );
+        } catch (e) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error submitting report: $e'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       },
       borderRadius: BorderRadius.circular(8),
       child: Padding(
@@ -427,7 +458,6 @@ class IntelPage extends ConsumerWidget {
     );
   }
 }
-
 
 class _ModernStatCard extends StatelessWidget {
   final String title;
