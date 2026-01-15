@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:geolocator/geolocator.dart';
 import '../app/theme.dart';
 import '../app/providers.dart';
 import '../models/zone.dart';
@@ -29,6 +31,8 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   double _currentZoom = 5.0; // Track current zoom level for clustering
   static const double _clusterZoomThreshold =
       8.0; // Show clusters below this zoom
+  LatLng? _userLocation; // User's detected location
+  bool _locationLoading = true; // Loading state for geolocation
 
   /// Detect the state/region based on map center coordinates
   String _detectState(double lat, double lng) {
@@ -118,6 +122,52 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   void initState() {
     super.initState();
     _sheetController = DraggableScrollableController();
+    _initUserLocation();
+  }
+
+  /// Get user's current location and center map on it
+  Future<void> _initUserLocation() async {
+    try {
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() => _locationLoading = false);
+        return;
+      }
+
+      // Check permissions
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() => _locationLoading = false);
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        setState(() => _locationLoading = false);
+        return;
+      }
+
+      // Get current position
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+      );
+
+      setState(() {
+        _userLocation = LatLng(position.latitude, position.longitude);
+        _locationLoading = false;
+      });
+
+      // Move map to user location when ready
+      if (_mapReady && _userLocation != null) {
+        _mapController.move(_userLocation!, 10);
+      }
+    } catch (e) {
+      debugPrint('Error getting location: $e');
+      setState(() => _locationLoading = false);
+    }
   }
 
   @override
@@ -201,6 +251,10 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                 setState(() {
                   _mapReady = true;
                 });
+                // Move to user location if available
+                if (_userLocation != null) {
+                  _mapController.move(_userLocation!, 10);
+                }
               },
               onPositionChanged: (position, hasGesture) {
                 // Detect current state based on map center
@@ -236,6 +290,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                     : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.safezone',
                 subdomains: const ['a', 'b', 'c'],
+                tileProvider: CancellableNetworkTileProvider(),
               ),
               // Show individual zones when zoomed in, clusters when zoomed out
               if (_currentZoom >= _clusterZoomThreshold) ...[
