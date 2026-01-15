@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'sos_service.dart';
+import '../../app/theme.dart';
 
 class SosPage extends StatefulWidget {
   const SosPage({super.key});
@@ -102,10 +103,11 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppColors.bgDark,
       appBar: AppBar(
-        title: Text('Emergency SOS', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
+        title: Text('Emergency SOS', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        backgroundColor: AppColors.bgCard,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -165,7 +167,7 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
               const Text(
                 'Tap to send location & alert to contacts',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: AppColors.textSecondary),
               ),
               
               const SizedBox(height: 48),
@@ -207,7 +209,7 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
                     style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   IconButton(
@@ -221,12 +223,13 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: AppColors.bgCard,
+                    border: Border.all(color: AppColors.border),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
+                  child: Text(
                     'No contacts added. Add family or friends to notify them in emergencies.',
-                    style: TextStyle(color: Colors.white54),
+                    style: TextStyle(color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                 )
@@ -237,12 +240,15 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
-                      tileColor: Colors.white.withOpacity(0.05),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      leading: const Icon(Icons.person, color: Colors.white70),
-                      title: Text(phone, style: const TextStyle(color: Colors.white)),
+                      tileColor: AppColors.bgCard,
+                      shape: RoundedRectangleBorder(
+                        side: BorderSide(color: AppColors.border),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      leading: const Icon(Icons.person, color: AppColors.textSecondary),
+                      title: Text(phone, style: TextStyle(color: AppColors.textPrimary)),
                       trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.redAccent),
+                        icon: const Icon(Icons.delete, color: AppColors.danger),
                         onPressed: () => _removeContact(doc.id),
                       ),
                     ),
@@ -259,16 +265,16 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF2A2A2A),
-        title: const Text('Add Trusted Contact', style: TextStyle(color: Colors.white)),
+        backgroundColor: AppColors.bgCard,
+        title: Text('Add Trusted Contact', style: GoogleFonts.inter(color: AppColors.textPrimary)),
         content: TextField(
           controller: _contactController,
           keyboardType: TextInputType.phone,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          style: TextStyle(color: AppColors.textPrimary),
+          decoration: InputDecoration(
             hintText: 'Enter phone number',
-            hintStyle: TextStyle(color: Colors.white38),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+            hintStyle: TextStyle(color: AppColors.textSecondary),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
           ),
         ),
         actions: [

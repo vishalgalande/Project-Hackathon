@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../app/theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -79,14 +81,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         child: Container(
           height: MediaQuery.of(context).size.height,
           decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF6A11CB), // Purple
-                Color(0xFF2575FC), // Blue
-              ],
-            ),
+            color: AppColors.bgDark,
           ),
           child: SafeArea(
             child: Padding(
@@ -105,12 +100,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       color: Colors.white,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Welcome Back',
-                      style: TextStyle(
+                      style: GoogleFonts.inter(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         letterSpacing: 1.2,
                       ),
                       textAlign: TextAlign.center,
@@ -120,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       'Sign in to define your next adventure',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white70,
+                        color: AppColors.textSecondary,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -129,8 +124,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     // Form Card
                     Card(
                       elevation: 8,
+                      color: AppColors.bgCard,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
+                        side: BorderSide(color: AppColors.border),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(32.0),
@@ -140,15 +137,22 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             children: [
                               TextFormField(
                                 controller: _emailController,
+                                style: const TextStyle(color: AppColors.textPrimary),
                                 decoration: InputDecoration(
                                   labelText: 'Email Address',
-                                  prefixIcon: const Icon(Icons.email_outlined),
+                                  labelStyle: const TextStyle(color: AppColors.textSecondary),
+                                  prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textSecondary),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: AppColors.border),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey.shade300),
+                                    borderSide: BorderSide(color: AppColors.border),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: AppColors.primary),
                                   ),
                                 ),
                                 keyboardType: TextInputType.emailAddress,
@@ -163,15 +167,22 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               TextFormField(
                                 controller: _passwordController,
                                 obscureText: true,
+                                style: const TextStyle(color: AppColors.textPrimary),
                                 decoration: InputDecoration(
                                   labelText: 'Password',
-                                  prefixIcon: const Icon(Icons.lock_outline),
+                                  labelStyle: const TextStyle(color: AppColors.textSecondary),
+                                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: AppColors.border),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey.shade300),
+                                    borderSide: BorderSide(color: AppColors.border),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: AppColors.primary),
                                   ),
                                 ),
                                 validator: (value) {
@@ -199,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 child: ElevatedButton(
                                   onPressed: _isLoading ? null : _handleLogin,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF6A11CB),
+                                    backgroundColor: AppColors.primary,
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -241,13 +252,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           onPressed: () {
                             // Navigate to Sign Up
                           },
-                          child: const Text(
+                          child: Text(
                             'Sign Up',
-                            style: TextStyle(
-                              color: Colors.white,
+                            style: GoogleFonts.inter(
+                              color: AppColors.textPrimary,
                               fontWeight: FontWeight.bold,
                               decoration: TextDecoration.underline,
-                              decorationColor: Colors.white,
+                              decorationColor: AppColors.textPrimary,
                             ),
                           ),
                         ),

@@ -4,25 +4,37 @@ import 'package:flutter/material.dart';
 /// Standard map-style app with colored zone overlays
 
 class AppColors {
-  // Clean, simple palette
-  static const Color background = Color(0xFFF5F5F5);
-  static const Color surface = Colors.white;
-  static const Color primary = Color(0xFF2196F3);
+  // Dark theme colors (from landing page)
+  static const Color bgDark = Color(0xFF0A0A0F);
+  static const Color bgCard = Color(0xFF1A1A1A);
+  static const Color border = Color(0xFF2A2A2A);
+  static const Color primary = Color(0xFF6366F1); // Indigo
+  static const Color primaryLight = Color(0xFF818CF8);
+  static const Color accent = Color(0xFFFF6B9D); // Pink accent
+  
+  // Text colors for dark theme
+  static const Color textPrimary = Color(0xFFFFFFFF);
+  static const Color textSecondary = Color(0xFFA0A0A0);
+  static const Color textOnPrimary = Colors.white;
 
   // Zone colors (matching the reference image)
   static const Color dangerZone = Color(0xFFE53935); // Red
   static const Color cautionZone = Color(0xFFFFB300); // Yellow/Amber
   static const Color safeZone = Color(0xFF43A047); // Green
 
+  // Status colors
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color danger = Color(0xFFEF4444);
+
+  // Legacy light theme colors (kept for compatibility)
+  static const Color background = Color(0xFFF5F5F5);
+  static const Color surface = Colors.white;
+
   // Cyberpunk accent colors (for GlitchButton widget)
   static const Color cyberCyan = Color(0xFF00FFFF);
   static const Color neonCrimson = Color(0xFFFF003C);
   static const Color voidBlack = Color(0xFF0A0A0F);
-
-  // Text
-  static const Color textPrimary = Color(0xFF212121);
-  static const Color textSecondary = Color(0xFF757575);
-  static const Color textOnPrimary = Colors.white;
 }
 
 class AppTheme {
@@ -43,7 +55,7 @@ class AppTheme {
         elevation: 1,
         centerTitle: true,
       ),
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: Colors.white,
         elevation: 2,
         shape: RoundedRectangleBorder(

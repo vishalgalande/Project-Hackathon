@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import 'auth/auth_dialogs.dart';
+import '../app/theme.dart';
+import 'auth/auth_dialogs.dart' hide AppColors;
 import 'chatbot/chat_button.dart';
 import 'sos/sos_page.dart';
 
@@ -105,20 +106,12 @@ class _LandingPageState extends State<LandingPage> {
             Row(
               children: [
                 _NavLink(text: 'Home', isActive: true, onTap: () {}),
-                const SizedBox(width: 40),
+                SizedBox(width: width > 1100 ? 30 : 20),
                 _NavLink(
                   text: 'Safety Zones',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Safety Map feature - Navigate to web version'),
-                      ),
-                    );
-                    context.go('/geofencing');
-                  },
+                  onTap: () => context.go('/command-center'),
                 ),
-                const SizedBox(width: 40),
+                SizedBox(width: width > 1100 ? 30 : 20),
                 _NavLink(
                   text: 'Transit Tracker',
                   onTap: () {
@@ -130,9 +123,24 @@ class _LandingPageState extends State<LandingPage> {
                     );
                   },
                 ),
+                SizedBox(width: width > 1100 ? 30 : 20),
+                _NavLink(
+                  text: 'Emergency',
+                  onTap: () => context.go('/emergency-contacts'),
+                ),
+                SizedBox(width: width > 1100 ? 30 : 20),
+                _NavLink(
+                  text: 'Dashboard',
+                  onTap: () => context.go('/safety-dashboard'),
+                ),
+                SizedBox(width: width > 1100 ? 30 : 20),
+                _NavLink(
+                  text: 'About',
+                  onTap: () => context.go('/about'),
+                ),
               ],
             ),
-            const SizedBox(width: 40),
+            SizedBox(width: width > 1100 ? 30 : 20),
             _buildAuthSection(),
           ] else ...[
             // Mobile Menu Button
@@ -175,7 +183,7 @@ class _LandingPageState extends State<LandingPage> {
                   );
                 },
               ),
-              _MobileMenuLink(
+               _MobileMenuLink(
                 text: 'Transit Tracker',
                 icon: Icons.directions_bus,
                 onTap: () {
@@ -184,6 +192,30 @@ class _LandingPageState extends State<LandingPage> {
                     const SnackBar(
                         content: Text('Navigate to Transit Tracker')),
                   );
+                },
+              ),
+              _MobileMenuLink(
+                text: 'Emergency',
+                icon: Icons.emergency,
+                onTap: () {
+                  Navigator.pop(context);
+                  context.go('/emergency-contacts');
+                },
+              ),
+              _MobileMenuLink(
+                text: 'Dashboard',
+                icon: Icons.bar_chart,
+                onTap: () {
+                  Navigator.pop(context);
+                  context.go('/safety-dashboard');
+                },
+              ),
+              _MobileMenuLink(
+                text: 'About',
+                icon: Icons.info,
+                onTap: () {
+                  Navigator.pop(context);
+                  context.go('/about');
                 },
               ),
               const Divider(color: AppColors.border, height: 32),
@@ -341,6 +373,7 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   Widget _buildHeroSection() {
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: 32,
@@ -373,36 +406,41 @@ class _LandingPageState extends State<LandingPage> {
             ),
           ),
           const SizedBox(height: 24),
-          // Title
-          Text.rich(
-            TextSpan(
+          // Title - Responsive alignment and sizing
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              runSpacing: 8,
               children: [
-                TextSpan(
-                  text: 'Navigate India ',
+                Text(
+                  'Navigate India ',
                   style: GoogleFonts.inter(
-                    fontSize: 56,
+                    fontSize: isMobile ? 36 : 56,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
+                    height: 1.0,
                   ),
+                  textAlign: TextAlign.center,
                 ),
-                WidgetSpan(
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [AppColors.primary, AppColors.accent],
-                    ).createShader(bounds),
-                    child: Text(
-                      'Safely',
-                      style: GoogleFonts.inter(
-                        fontSize: 56,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [AppColors.primary, AppColors.accent],
+                  ).createShader(bounds),
+                  child: Text(
+                    'Safely',
+                    style: GoogleFonts.inter(
+                      fontSize: isMobile ? 36 : 56,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1.0,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ],
             ),
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           // Subtitle
@@ -419,21 +457,19 @@ class _LandingPageState extends State<LandingPage> {
             ),
           ),
           const SizedBox(height: 40),
-          // CTA Buttons
+          // CTA Buttons - Responsive Wrap
           Wrap(
             spacing: 16,
             runSpacing: 16,
             alignment: WrapAlignment.center,
             children: [
               ElevatedButton(
-                onPressed: () {
-                  context.go('/geofencing');
-                },
+                onPressed: () => context.go('/command-center'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 24 : 40, vertical: 20),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -444,23 +480,34 @@ class _LandingPageState extends State<LandingPage> {
                 ),
               ),
               OutlinedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Navigate to Transit Tracker')),
-                  );
-                },
+                onPressed: () => context.go('/emergency-contacts'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textPrimary,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                  side: const BorderSide(color: AppColors.border, width: 2),
+                  foregroundColor: AppColors.danger,
+                  padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 24 : 40, vertical: 20),
+                  side: const BorderSide(color: AppColors.danger, width: 2),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: const Text(
-                  'Track Transit',
+                  'Emergency Contacts',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+              OutlinedButton(
+                onPressed: () => context.go('/safety-dashboard'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 24 : 40, vertical: 20),
+                  side: const BorderSide(color: AppColors.primary, width: 2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  'Safety Dashboard',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -516,7 +563,7 @@ class _LandingPageState extends State<LandingPage> {
                         ? (constraints.maxWidth - 24) / 2
                         : constraints.maxWidth,
                     onTap: () {
-                      context.go('/geofencing');
+                      context.go('/command-center');
                     },
                   ),
                   _FeatureCard(

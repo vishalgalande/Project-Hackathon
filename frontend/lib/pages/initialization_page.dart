@@ -13,12 +13,60 @@ class InitializationPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
+      backgroundColor: AppColors.bgDark,
+      body: Stack(
+        children: [
+          // Gradient background similar to landing page
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: AppColors.bgDark,
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: -100,
+                    left: -100,
+                    child: Container(
+                      width: 600,
+                      height: 600,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            AppColors.primary.withOpacity(0.15),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -100,
+                    right: -100,
+                    child: Container(
+                      width: 600,
+                      height: 600,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            AppColors.accent.withOpacity(0.1),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
               const Spacer(),
               
               // Logo / Icon
@@ -26,13 +74,17 @@ class InitializationPage extends ConsumerWidget {
                 width: 120,
                 height: 120,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.accent],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.shield_outlined,
                   size: 60,
-                  color: AppColors.primary,
+                  color: Colors.white,
                 ),
               )
                   .animate()
@@ -46,7 +98,8 @@ class InitializationPage extends ConsumerWidget {
                 'SafeZone',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   fontSize: 36,
-                  color: AppColors.primary,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
                 ),
               )
                   .animate()
@@ -69,7 +122,9 @@ class InitializationPage extends ConsumerWidget {
               
               Text(
                 'Stay safe while exploring new places.\nReal-time zone alerts and safety information.',
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
                 textAlign: TextAlign.center,
               )
                   .animate()
@@ -81,7 +136,8 @@ class InitializationPage extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: AppColors.bgCard,
+                  border: Border.all(color: AppColors.border),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -89,7 +145,9 @@ class InitializationPage extends ConsumerWidget {
                   children: [
                     Text(
                       'Zone Types',
-                      style: Theme.of(context).textTheme.labelLarge,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     _buildLegendItem(context, AppColors.safeZone, 'Safe Zone', 'Low risk area'),
@@ -115,7 +173,12 @@ class InitializationPage extends ConsumerWidget {
                     context.go('/command-center');
                   },
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -135,6 +198,8 @@ class InitializationPage extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+        ],
       ),
     );
   }

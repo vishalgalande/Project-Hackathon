@@ -26,7 +26,7 @@ class IntelPage extends ConsumerWidget {
     final isUserReportedDanger = zone.negativeFeedbackCount > 10;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppColors.bgDark,
       body: CustomScrollView(
         slivers: [
           // Hero Header with Safety Score
@@ -34,7 +34,7 @@ class IntelPage extends ConsumerWidget {
             expandedHeight: 260.0,
             floating: false,
             pinned: true,
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.bgCard,
             foregroundColor: AppColors.textPrimary,
             elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
@@ -55,8 +55,8 @@ class IntelPage extends ConsumerWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          zoneColor.withOpacity(0.15),
-                          Colors.white,
+                          zoneColor.withOpacity(0.2),
+                          AppColors.bgDark,
                         ],
                       ),
                     ),
@@ -73,7 +73,8 @@ class IntelPage extends ConsumerWidget {
                           height: 100,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white,
+                            color: AppColors.bgCard,
+                            border: Border.all(color: AppColors.border, width: 2),
                             boxShadow: [
                               BoxShadow(
                                 color: zoneColor.withOpacity(0.3),
@@ -215,8 +216,8 @@ class IntelPage extends ConsumerWidget {
                   Center(
                     child: Text(
                       '${zone.negativeFeedbackCount} active reports in last 24h',
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -228,11 +229,12 @@ class IntelPage extends ConsumerWidget {
                   _buildSectionTitle('Zone Analysis'),
                   const SizedBox(height: 16),
 
-                  // Bento Grid
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ModernStatCard(
+                  // Stat Cards - Responsive Grid
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isSmall = constraints.maxWidth < 400;
+                      final cards = [
+                        _ModernStatCard(
                           title: 'Crime Index',
                           value: '${zone.crimeRate}',
                           subtitle: 'Lower is better',
@@ -241,10 +243,7 @@ class IntelPage extends ConsumerWidget {
                               ? Colors.green
                               : Colors.orange,
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _ModernStatCard(
+                        _ModernStatCard(
                           title: 'Visibility',
                           value: '${zone.lightingLevel}%',
                           subtitle: 'Street light coverage',
@@ -253,8 +252,24 @@ class IntelPage extends ConsumerWidget {
                               ? Colors.green
                               : Colors.red,
                         ),
-                      ),
-                    ],
+                      ];
+
+                      return isSmall
+                          ? Column(
+                              children: [
+                                cards[0],
+                                const SizedBox(height: 16),
+                                cards[1],
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                Expanded(child: cards[0]),
+                                const SizedBox(width: 16),
+                                Expanded(child: cards[1]),
+                              ],
+                            );
+                    },
                   ),
 
                   const SizedBox(height: 32),
@@ -262,10 +277,10 @@ class IntelPage extends ConsumerWidget {
                   const SizedBox(height: 12),
                   Text(
                     zone.description,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       height: 1.6,
-                      color: Colors.grey.shade700,
+                      color: Color(0xFFE0E0E0), // Brighter text for better visibility
                     ),
                   ),
 
@@ -303,12 +318,12 @@ class IntelPage extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.bgCard,
+          border: Border.all(color: AppColors.border),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withOpacity(0.3),
               blurRadius: 5,
             ),
           ],
@@ -317,7 +332,7 @@ class IntelPage extends ConsumerWidget {
           children: [
             Icon(Icons.info_outline, color: color, size: 20),
             const SizedBox(width: 12),
-            Expanded(child: Text(warning)),
+            Expanded(child: Text(warning, style: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 14))),
           ],
         ),
       ),
@@ -332,7 +347,7 @@ class IntelPage extends ConsumerWidget {
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppColors.bgCard,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -344,12 +359,13 @@ class IntelPage extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Your reports help mark this zone as DANGER (>10 reports).',
-              style: TextStyle(color: Colors.grey.shade600),
+              style: const TextStyle(color: Color(0xFFB0B0B0), fontSize: 14),
             ),
             const SizedBox(height: 24),
             _buildReportOption(context, ref, zone, 'Theft / Pickpocketing',
@@ -395,10 +411,11 @@ class IntelPage extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: AppColors.bgCard,
+                border: Border.all(color: AppColors.border),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: Colors.black87, size: 22),
+              child: Icon(icon, color: AppColors.textPrimary, size: 22),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -407,7 +424,7 @@ class IntelPage extends ConsumerWidget {
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
-                  color: Colors.black87,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
@@ -440,11 +457,12 @@ class _ModernStatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.bgCard,
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -479,9 +497,9 @@ class _ModernStatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 11,
-              color: Colors.grey.shade500,
+              color: Color(0xFFB0B0B0), // Brighter secondary text
             ),
           ),
         ],

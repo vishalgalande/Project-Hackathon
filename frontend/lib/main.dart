@@ -6,9 +6,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'features/landing_page.dart';
-import 'features/auth/auth_dialogs.dart';
+import 'features/auth/auth_dialogs.dart' hide AppColors;
 import 'pages/command_center_page.dart';
 import 'pages/intel_page.dart';
+import 'app/router.dart'; // Import central router
+import 'app/theme.dart'; // Import theme for AppColors
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,30 +51,7 @@ void main() async {
   );
 }
 
-// GoRouter configuration
-final GoRouter _router = GoRouter(
-  initialLocation: '/',
-  routes: [
-    GoRoute(
-      path: '/',
-      name: 'home',
-      builder: (context, state) => const LandingPage(),
-    ),
-    GoRoute(
-      path: '/geofencing',
-      name: 'geofencing',
-      builder: (context, state) => const CommandCenterPage(),
-    ),
-    GoRoute(
-      path: '/intel/:zoneId',
-      name: 'intel',
-      builder: (context, state) {
-        final zoneId = state.pathParameters['zoneId'] ?? '';
-        return IntelPage(zoneId: zoneId);
-      },
-    ),
-  ],
-);
+// Consolidated to lib/app/router.dart
 
 class SafeTravelApp extends StatelessWidget {
   const SafeTravelApp({super.key});
@@ -95,7 +74,7 @@ class SafeTravelApp extends StatelessWidget {
           ThemeData.dark().textTheme,
         ),
       ),
-      routerConfig: _router,
+      routerConfig: appRouter,
     );
   }
 }

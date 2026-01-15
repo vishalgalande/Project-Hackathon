@@ -21,7 +21,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   // Center of India (approximately)
   final LatLng _initialCenter = const LatLng(20.5937, 78.9629);
   final double _initialZoom = 5.0; // Zoom out to see all India
-  bool _isDarkMode = false; // Add state for map style
+  bool _isDarkMode = true; // Always use dark mode to match landing page
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +47,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
     }).toList();
 
     return Scaffold(
+      backgroundColor: AppColors.bgDark,
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
@@ -64,10 +65,8 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
             ),
             children: [
               TileLayer(
-                // Switch between Standard and Dark Matter
-                urlTemplate: _isDarkMode
-                    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                // Always use dark map to match landing page theme
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
                 userAgentPackageName: 'com.example.safezone',
                 subdomains: const ['a', 'b', 'c'],
               ),
@@ -106,15 +105,14 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                            color: _isDarkMode
-                                ? Colors.black87.withOpacity(0.9)
-                                : Colors.white.withOpacity(0.9),
+                            color: AppColors.bgCard,
+                            border: Border.all(color: AppColors.border),
                             shape: BoxShape.circle,
                             boxShadow: [
-                              BoxShadow(color: Colors.black12, blurRadius: 8)
+                              BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8)
                             ]),
-                        child: Icon(Icons.arrow_back,
-                            color: _isDarkMode ? Colors.white : Colors.black87),
+                        child: const Icon(Icons.arrow_back,
+                            color: AppColors.textPrimary),
                       ),
                     ),
 
@@ -123,23 +121,21 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                          color: _isDarkMode
-                              ? Colors.black87.withOpacity(0.9)
-                              : Colors.white.withOpacity(0.9),
+                          color: AppColors.bgCard,
+                          border: Border.all(color: AppColors.border),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
-                            BoxShadow(color: Colors.black12, blurRadius: 8)
+                            BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8)
                           ]),
                       child: Row(
                         children: [
-                          Icon(Icons.shield_outlined,
-                              color: AppColors.safeZone, size: 18),
+                          const Icon(Icons.shield_outlined,
+                              color: AppColors.success, size: 18),
                           const SizedBox(width: 8),
                           Text(
                             'SafeZone',
-                            style: GoogleFonts.orbitron(
-                              color:
-                                  _isDarkMode ? Colors.white : Colors.black87,
+                            style: GoogleFonts.inter(
+                              color: AppColors.textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                               letterSpacing: 1.0,
@@ -192,18 +188,19 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: _isDarkMode ? Colors.black87 : Colors.white,
+                      color: AppColors.bgCard,
+                      border: Border.all(color: AppColors.border),
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: Colors.black.withOpacity(0.3),
                           blurRadius: 8,
                         ),
                       ],
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.add,
-                      color: _isDarkMode ? Colors.white : Colors.black87,
+                      color: AppColors.textPrimary,
                       size: 24,
                     ),
                   ),
@@ -228,18 +225,19 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: _isDarkMode ? Colors.black87 : Colors.white,
+                      color: AppColors.bgCard,
+                      border: Border.all(color: AppColors.border),
                       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: Colors.black.withOpacity(0.3),
                           blurRadius: 8,
                         ),
                       ],
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.remove,
-                      color: _isDarkMode ? Colors.white : Colors.black87,
+                      color: AppColors.textPrimary,
                       size: 24,
                     ),
                   ),
@@ -261,10 +259,11 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.9),
+            color: AppColors.bgCard,
+            border: Border.all(color: AppColors.border),
             shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)]),
-        child: Icon(icon, color: Colors.black87, size: 20),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8)]),
+        child: Icon(icon, color: AppColors.textPrimary, size: 20),
       ),
     );
   }
@@ -384,12 +383,12 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors
-                          .black, // User requested background black ONLY on arrows
+                      color: AppColors.bgCard,
+                      border: Border.all(color: AppColors.border),
                       borderRadius: BorderRadius.circular(30), // Pill shape
                       boxShadow: [
                         BoxShadow(
-                            color: Colors.black26,
+                            color: Colors.black.withOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4)),
                       ],
@@ -402,7 +401,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                         // Up Arrow
                         IconButton(
                           icon: const Icon(Icons.keyboard_arrow_up_rounded,
-                              color: Colors.white), // White Icon
+                              color: AppColors.textPrimary),
                           onPressed: () {
                             if (_sheetController.size < 0.1) {
                               _sheetController.animateTo(0.15,
@@ -420,7 +419,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                         // Down Arrow
                         IconButton(
                           icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                              color: Colors.white), // White Icon
+                              color: AppColors.textPrimary),
                           onPressed: () {
                             if (_sheetController.size > 0.5) {
                               _sheetController.animateTo(0.15,
@@ -443,11 +442,11 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                       margin: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(
-                            0.9), // Semi-transparent for legibility
+                        color: AppColors.bgCard,
+                        border: Border.all(color: AppColors.border),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
-                          BoxShadow(color: Colors.black12, blurRadius: 4),
+                          BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
                         ],
                       ),
                       child: InkWell(
@@ -482,9 +481,9 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                                   children: [
                                     Text(
                                       zone.name,
-                                      style: const TextStyle(
+                                      style: GoogleFonts.inter(
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
+                                        color: AppColors.textPrimary,
                                         fontSize: 15,
                                       ),
                                     ),
@@ -493,9 +492,9 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                                       zone.description,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
+                                      style: GoogleFonts.inter(
                                         fontSize: 13,
-                                        color: Colors.grey.shade600,
+                                        color: AppColors.textSecondary,
                                       ),
                                     ),
                                     // Warning tags
@@ -520,7 +519,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                                             ),
                                             child: Text(
                                               warning,
-                                              style: TextStyle(
+                                              style: GoogleFonts.inter(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w500,
                                                 color: zone.type.zoneColor,
@@ -535,7 +534,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                               ),
                               // Trailing icon
                               const Icon(Icons.chevron_right,
-                                  size: 20, color: Colors.grey),
+                                  size: 20, color: AppColors.textSecondary),
                             ],
                           ),
                         ),
