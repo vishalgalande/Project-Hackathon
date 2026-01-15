@@ -2,5 +2,8 @@
 firebase-admin
 flask
 flask-cors
-# requests
+requests
+googlemaps
+gtfs-realtime-bindings
+protobuf
 # Add other dependencies as needed
