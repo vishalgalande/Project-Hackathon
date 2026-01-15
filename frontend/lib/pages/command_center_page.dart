@@ -182,10 +182,10 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
               minZoom: 4,
               maxZoom: 18,
               // India bounds - prevents panning outside India
-              maxBounds: LatLngBounds(
-                const LatLng(6.0, 68.0),   // Southwest
-                const LatLng(35.5, 97.5),  // Northeast
-              ),
+              // maxBounds: LatLngBounds(
+              //   const LatLng(6.0, 68.0),   // Southwest
+              //   const LatLng(35.5, 97.5),  // Northeast
+              // ),
               interactionOptions: const InteractionOptions(
                 flags: InteractiveFlag.all,
                 enableScrollWheel: true,
