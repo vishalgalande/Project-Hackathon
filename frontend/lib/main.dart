@@ -9,6 +9,7 @@ import 'features/landing_page.dart';
 import 'features/auth/auth_dialogs.dart';
 import 'pages/command_center_page.dart';
 import 'pages/intel_page.dart';
+import 'pages/admin_page.dart';
 import 'features/transit_tracker_screen.dart';
 
 void main() async {
@@ -76,6 +77,11 @@ final GoRouter _router = GoRouter(
       path: '/tracker',
       name: 'tracker',
       builder: (context, state) => const TransitTrackerScreen(),
+    ),
+    GoRoute(
+      path: '/admin',
+      name: 'admin',
+      builder: (context, state) => const AdminPage(),
     ),
   ],
 );

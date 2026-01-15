@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 /// Zone data model for SafeZone
 class Zone extends Equatable {
   final String id;
+  final String cityId; // Link to parent city
   final String name;
   final String _baseType; // The initial base type
   final double centerLat;
@@ -13,10 +14,17 @@ class Zone extends Equatable {
   final int recentIncidents;
   final String description;
   final List<String> warnings;
-  final int negativeFeedbackCount; // New field for user reports
+  final int negativeFeedbackCount; // Total user reports
+
+  // Categorized report counts
+  final int theftReports;
+  final int harassmentReports;
+  final int poorLightingReports;
+  final int suspiciousReports;
 
   const Zone({
     required this.id,
+    this.cityId = '',
     required this.name,
     required String type,
     required this.centerLat,
@@ -28,7 +36,71 @@ class Zone extends Equatable {
     this.description = '',
     this.warnings = const [],
     this.negativeFeedbackCount = 0,
+    this.theftReports = 0,
+    this.harassmentReports = 0,
+    this.poorLightingReports = 0,
+    this.suspiciousReports = 0,
   }) : _baseType = type;
+
+  /// Create Zone from Firebase document
+  factory Zone.fromFirebase(String id, Map<String, dynamic> data) {
+    return Zone(
+      id: id,
+      cityId: data['cityId'] ?? '',
+      name: data['name'] ?? '',
+      type: data['type'] ?? 'safe',
+      centerLat: (data['centerLat'] ?? 0).toDouble(),
+      centerLng: (data['centerLng'] ?? 0).toDouble(),
+      radius: (data['radius'] ?? 500).toDouble(),
+      crimeRate: data['crimeRate'] ?? 0,
+      lightingLevel: data['lightingLevel'] ?? 100,
+      recentIncidents: data['recentIncidents'] ?? 0,
+      description: data['description'] ?? '',
+      warnings: List<String>.from(data['warnings'] ?? []),
+      negativeFeedbackCount: data['negativeFeedbackCount'] ?? 0,
+      theftReports: data['theftReports'] ?? 0,
+      harassmentReports: data['harassmentReports'] ?? 0,
+      poorLightingReports: data['poorLightingReports'] ?? 0,
+      suspiciousReports: data['suspiciousReports'] ?? 0,
+    );
+  }
+
+  /// Convert Zone to Firebase map
+  Map<String, dynamic> toMap() {
+    return {
+      'cityId': cityId,
+      'name': name,
+      'type': _baseType,
+      'centerLat': centerLat,
+      'centerLng': centerLng,
+      'radius': radius,
+      'crimeRate': crimeRate,
+      'lightingLevel': lightingLevel,
+      'recentIncidents': recentIncidents,
+      'description': description,
+      'warnings': warnings,
+      'negativeFeedbackCount': negativeFeedbackCount,
+      'theftReports': theftReports,
+      'harassmentReports': harassmentReports,
+      'poorLightingReports': poorLightingReports,
+      'suspiciousReports': suspiciousReports,
+    };
+  }
+
+  /// Get live warnings based on actual report counts
+  List<String> get liveWarnings {
+    final List<String> result = [];
+    if (theftReports >= 3)
+      result.add('⚠️ Theft/Pickpocketing reported ($theftReports reports)');
+    if (harassmentReports >= 3)
+      result.add('⚠️ Harassment reported ($harassmentReports reports)');
+    if (poorLightingReports >= 3)
+      result.add('💡 Poor lighting reported ($poorLightingReports reports)');
+    if (suspiciousReports >= 3)
+      result
+          .add('👁️ Suspicious activity reported ($suspiciousReports reports)');
+    return result;
+  }
 
   /// Dynamic type based on feedback
   /// If negative reports > 10, strictly enforce DANGER type
@@ -71,6 +143,7 @@ class Zone extends Equatable {
   Zone copyWithFeedback(int newCount) {
     return Zone(
       id: id,
+      cityId: cityId,
       name: name,
       type: _baseType,
       centerLat: centerLat,
@@ -88,6 +161,7 @@ class Zone extends Equatable {
   @override
   List<Object?> get props => [
         id,
+        cityId,
         name,
         _baseType,
         centerLat,
@@ -105,6 +179,7 @@ class CityCluster {
   final double centerLng;
   final int zoneCount;
   final int avgCrimeRate;
+  final int avgLightingLevel;
   final String dominantType; // 'safe', 'caution', or 'danger'
 
   const CityCluster({
@@ -114,8 +189,36 @@ class CityCluster {
     required this.centerLng,
     required this.zoneCount,
     required this.avgCrimeRate,
+    this.avgLightingLevel = 80,
     required this.dominantType,
   });
+
+  /// Create CityCluster from Firebase document
+  factory CityCluster.fromFirebase(String id, Map<String, dynamic> data) {
+    return CityCluster(
+      cityId: id,
+      cityName: data['name'] ?? '',
+      centerLat: (data['centerLat'] ?? 0).toDouble(),
+      centerLng: (data['centerLng'] ?? 0).toDouble(),
+      zoneCount: data['zoneCount'] ?? 0,
+      avgCrimeRate: data['avgCrimeRate'] ?? 0,
+      avgLightingLevel: data['avgLightingLevel'] ?? 80,
+      dominantType: data['dominantType'] ?? 'safe',
+    );
+  }
+
+  /// Convert CityCluster to Firebase map
+  Map<String, dynamic> toMap() {
+    return {
+      'name': cityName,
+      'centerLat': centerLat,
+      'centerLng': centerLng,
+      'zoneCount': zoneCount,
+      'avgCrimeRate': avgCrimeRate,
+      'avgLightingLevel': avgLightingLevel,
+      'dominantType': dominantType,
+    };
+  }
 
   /// Create a cluster from a list of zones
   factory CityCluster.fromZones(
@@ -128,6 +231,7 @@ class CityCluster {
         centerLng: 0,
         zoneCount: 0,
         avgCrimeRate: 0,
+        avgLightingLevel: 80,
         dominantType: 'safe',
       );
     }
@@ -138,9 +242,12 @@ class CityCluster {
     final avgLng =
         zones.map((z) => z.centerLng).reduce((a, b) => a + b) / zones.length;
 
-    // Calculate average crime rate
+    // Calculate averages
     final avgCrime =
         zones.map((z) => z.crimeRate).reduce((a, b) => a + b) ~/ zones.length;
+    final avgLighting =
+        zones.map((z) => z.lightingLevel).reduce((a, b) => a + b) ~/
+            zones.length;
 
     // Count zone types
     int dangerCount = zones.where((z) => z.type == 'danger').length;
@@ -162,6 +269,7 @@ class CityCluster {
       centerLng: avgLng,
       zoneCount: zones.length,
       avgCrimeRate: avgCrime,
+      avgLightingLevel: avgLighting,
       dominantType: dominant,
     );
   }
