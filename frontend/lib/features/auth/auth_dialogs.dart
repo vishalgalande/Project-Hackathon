@@ -46,10 +46,11 @@ class _LoginDialog extends StatefulWidget {
 }
 
 class _LoginDialogState extends State<_LoginDialog> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _emailController = TextEditingController(text: 'abc@gmail.com');
+  final _passwordController = TextEditingController(text: '123456');
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _isPasswordVisible = false;
   String? _error;
 
   @override
@@ -151,7 +152,20 @@ class _LoginDialogState extends State<_LoginDialog> {
                 controller: _passwordController,
                 label: 'Password',
                 hintText: '••••••••',
-                obscureText: true,
+                obscureText: !_isPasswordVisible,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                    color: AppColors.textSecondary,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                ),
                 validator: (v) =>
                     v?.isEmpty == true ? 'Password is required' : null,
               ),
@@ -218,6 +232,7 @@ class _LoginDialogState extends State<_LoginDialog> {
     bool obscureText = false,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    Widget? suffixIcon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,6 +269,7 @@ class _LoginDialogState extends State<_LoginDialog> {
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: AppColors.primary),
             ),
+            suffixIcon: suffixIcon,
           ),
         ),
       ],

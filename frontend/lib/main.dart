@@ -16,13 +16,13 @@ import 'features/transit_tracker_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables (skip on Web to avoid 404s in production)
-  if (!kIsWeb) {
-    try {
-      await dotenv.load(fileName: ".env");
-    } catch (e) {
-      debugPrint('Warning: .env file not loaded.');
-    }
+  // Load environment variables (optional - app works without it but chatbot won't)
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    // .env file not found - chatbot will show error message
+    debugPrint(
+        'Warning: .env file not loaded. Chatbot requires GEMINI_API_KEY.');
   }
 
   if (kIsWeb) {

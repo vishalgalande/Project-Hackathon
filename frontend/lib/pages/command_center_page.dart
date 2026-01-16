@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:latlong2/latlong.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -34,6 +35,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
   bool _isDarkMode = false; // Add state for map style
   String _currentState = ''; // Current state/region being viewed
   bool _mapReady = false; // Track if map controller is ready
+  Zone? _selectedZone; // Currently selected zone for details sidebar
   double _currentZoom = 5.0; // Track current zoom level for clustering
   static const double _clusterZoomThreshold =
       8.0; // Show clusters below this zoom
@@ -246,9 +248,28 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
 
   @override
   Widget build(BuildContext context) {
-    final zones = ref.watch(zonesProvider);
+    // Merge Firebase data with Local fallback for real-time updates
+    final firebaseZonesAsync = ref.watch(firebaseZonesProvider);
+    final localZones = ref.watch(zonesProvider);
+
+    final zones = firebaseZonesAsync.when(
+      data: (fz) => fz.isEmpty ? localZones : fz,
+      loading: () => localZones.isNotEmpty ? localZones : <Zone>[],
+      error: (_, __) => localZones,
+    );
+
     final userLocation = ref.watch(userLocationProvider);
     final appState = ref.watch(appStateProvider);
+
+    // Ensure selected zone stays up to date with live data
+    Zone? displayZone = _selectedZone;
+    if (displayZone != null && zones.isNotEmpty) {
+      try {
+        displayZone = zones.firstWhere((z) => z.id == displayZone!.id);
+      } catch (_) {
+        // Zone might have been deleted or filtered out
+      }
+    }
 
     // Note: Warning is now shown via custom widget in Stack, not SnackBar
     // Handle keyboard events: Space for simulation, 1/2/3 for speed
@@ -693,6 +714,26 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
               top: _isPanelExpanded ? 24 : MediaQuery.of(context).size.height,
               child: _buildZonesOverlay(_getVisibleZones(zones)),
             ),
+
+            // ZONE DETAILS SIDEBAR (Slides in from Right)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOutQuart,
+              right: displayZone != null ? 0 : -450, // Hide off-screen
+              top: 0,
+              bottom: 0,
+              child: displayZone != null
+                  ? _ZoneDetailsSidebar(
+                      zone: displayZone,
+                      onClose: () {
+                        setState(() => _selectedZone = null);
+                        // Re-center map to original center or user loc?
+                        // Optional: _mapController.move(_selectedZone!.latLng, _currentZoom);
+                      },
+                      ref: ref,
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ), // Close Scaffold
@@ -866,7 +907,41 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
   }
 
   void _showZoneDetails(Zone zone) {
-    context.push('/intel/${zone.id}');
+    setState(() {
+      _selectedZone = zone;
+      _isPanelExpanded = false; // Close the list panel
+    });
+
+    // Center map on zone with offset (so it appears to the left of the sidebar)
+    // Sidebar width is roughly 400. Offset X by 200.
+    _centerMapWithOffset(LatLng(zone.centerLat, zone.centerLng), 200);
+  }
+
+  /// Centers the map on [target] but shifted by [offsetX] pixels using current zoom
+  void _centerMapWithOffset(LatLng target, double offsetX) {
+    if (!_mapReady) return;
+
+    final zoom =
+        _mapController.camera.zoom < 14.0 ? 14.0 : _mapController.camera.zoom;
+    // We want the Target to be at (ScreenCenter.x - offsetX, ScreenCenter.y)
+    // This implies the CameraCenter should be at Target + (Offset in World Coords)
+
+    // Simplest way with flutter_map:
+    // 1. Project target to Point
+    // 2. Add offset to Point (shifting the "camera view")
+    //    If we want content to move LEFT, we move Camera RIGHT (add positive X to center)
+    // 3. Unproject back to LatLng
+
+    final camera = _mapController.camera;
+    final targetPoint = camera.project(target);
+    // We want targetPoint to be at (ScreenWidth/2 - offsetX)
+    // Current MapCenter is at (ScreenWidth/2)
+    // So MapCenter needs to be at targetPoint + offsetX
+
+    final newCenterPoint = targetPoint + CustomPoint(offsetX, 0);
+    final newCenter = camera.unproject(newCenterPoint);
+
+    _mapController.move(newCenter, zoom);
   }
 
   Widget _buildZonesOverlay(List<Zone> zones) {
@@ -1157,5 +1232,342 @@ class _AnimatedZoneWarningState extends State<_AnimatedZoneWarning> {
         ),
       ),
     );
+  }
+}
+
+/// Sidebar widget for Zone Details
+class _ZoneDetailsSidebar extends StatelessWidget {
+  final Zone zone;
+  final VoidCallback onClose;
+  final WidgetRef ref;
+
+  const _ZoneDetailsSidebar({
+    required this.zone,
+    required this.onClose,
+    required this.ref,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final zoneColor = zone.type.zoneColor;
+
+    // Calculate Score
+    int baseScore = zone.type == 'safe'
+        ? 95
+        : zone.type == 'caution'
+            ? 60
+            : 20;
+    int penalty = zone.negativeFeedbackCount * 3;
+    int finalScore = (baseScore - penalty).clamp(0, 100);
+
+    return Container(
+      width: 400,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            spreadRadius: 5,
+          )
+        ],
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: onClose,
+                    icon: const Icon(Icons.arrow_forward), // "Back" to map
+                    tooltip: 'Close Details',
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          zone.name,
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          zone.cityId.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: zoneColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: zoneColor.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      zone.threatLevel.toUpperCase(),
+                      style: TextStyle(
+                        color: zoneColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Scrollable Content
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(24),
+                children: [
+                  // Score Circle
+                  Center(
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        border: Border.all(
+                            color: zoneColor.withOpacity(0.2), width: 8),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '$finalScore',
+                            style: GoogleFonts.orbitron(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: zoneColor,
+                            ),
+                          ),
+                          Text(
+                            'SAFETY SCORE',
+                            style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade500),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Report Action
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showReportDialog(context, ref, zone),
+                      icon: const Icon(Icons.campaign_rounded),
+                      label: const Text('REPORT ISSUE'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.textPrimary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      '${zone.negativeFeedbackCount} active reports today',
+                      style:
+                          TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Stats
+                  Row(
+                    children: [
+                      _buildStatBox('CRIME', '${zone.crimeRate}',
+                          Icons.shield_outlined, Colors.orange),
+                      const SizedBox(width: 12),
+                      _buildStatBox('LIGHT', '${zone.lightingLevel}%',
+                          Icons.lightbulb_outline, Colors.blue),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+                  Text('Description',
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text(
+                    zone.description,
+                    style: TextStyle(height: 1.5, color: Colors.grey.shade700),
+                  ),
+
+                  if (zone.warnings.isNotEmpty ||
+                      zone.liveWarnings.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    Text('Advisories',
+                        style:
+                            GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    ...zone.liveWarnings
+                        .map((w) => _buildWarningItem(w, AppColors.dangerZone)),
+                    ...zone.warnings
+                        .map((w) => _buildWarningItem(w, zoneColor)),
+                  ]
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatBox(String label, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(value,
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWarningItem(String text, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info, color: color, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+              child: Text(text,
+                  style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13))),
+        ],
+      ),
+    );
+  }
+
+  void _showReportDialog(BuildContext context, WidgetRef ref, Zone zone) {
+    // Reusing the same report dialog logic via a static method approach or duplication
+    // Duplicate for simplicity as context extraction is complex
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Report Safety Issue (Sidebar)',
+              style: GoogleFonts.poppins(
+                  fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Your reports help mark this zone as DANGER (>10 reports).',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 24),
+            // Options
+            _buildReportOption(
+                context, ref, zone, 'Theft / Pickpocketing', 'theft'),
+            _buildReportOption(context, ref, zone, 'Harassment', 'harassment'),
+            _buildReportOption(context, ref, zone, 'Poor Lighting', 'lighting'),
+            _buildReportOption(
+                context, ref, zone, 'Suspicious Activity', 'suspicious'),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReportOption(BuildContext context, WidgetRef ref, Zone zone,
+      String label, String type) {
+    return ListTile(
+        leading: const Icon(Icons.report_problem_outlined),
+        title: Text(label),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () async {
+          final newCount = zone.negativeFeedbackCount + 1;
+          try {
+            final service = ref.read(zoneServiceProvider);
+            // Assuming zoneServiceProvider is robust
+            await service.reportZone(zone.id, zone.cityId, newCount,
+                reportType: type);
+            if (context.mounted) {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(
+                  newCount > 10
+                      ? '⚠️ Zone marked as DANGER! Total reports: $newCount'
+                      : '✅ Report submitted! Total reports: $newCount',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                backgroundColor: newCount > 10
+                    ? AppColors.dangerZone
+                    : Colors.green.shade700,
+              ));
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Error: $e'), backgroundColor: Colors.red));
+              Navigator.pop(context);
+            }
+          }
+        });
   }
 }

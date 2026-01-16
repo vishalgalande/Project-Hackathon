@@ -1,6 +1,7 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'chat_models.dart';
+import '../../models/zone.dart';
 
 /// Service for interacting with Google Gemini 2.5 Flash Lite API.
 ///
@@ -22,8 +23,7 @@ class ChatService {
   }
 
   void _initialize() {
-    final apiKey = dotenv.env['GEMINI_API_KEY'] ??
-        const String.fromEnvironment('GEMINI_API_KEY');
+    final apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
 
     if (apiKey.isEmpty || apiKey == 'YOUR_GEMINI_API_KEY_HERE') {
       _initError = 'Please add your Gemini API key to the .env file';
@@ -46,6 +46,9 @@ Your role is to:
 
 Keep responses brief (2-3 sentences max) unless the user asks for details.
 Always prioritize user safety and recommend consulting local authorities for emergencies.
+
+
+${_buildZoneContext()}
 '''),
       );
 
@@ -103,5 +106,28 @@ Always prioritize user safety and recommend consulting local authorities for eme
     if (_model != null) {
       _chat = _model!.startChat();
     }
+  }
+
+  /// specific data to the AI.
+  String _buildZoneContext() {
+    final buffer = StringBuffer();
+    buffer.writeln('\n=== CURRENT SAFETY ZONE DATA ===');
+
+    // Group by City (heuristic based on ID prefix or manual grouping if available)
+    // For now, simple list
+    for (final zone in MockZones.allIndiaZones) {
+      buffer.writeln(
+          '- ${zone.name} (${zone.type.toUpperCase()}): ${zone.description}');
+      buffer.writeln(
+          '  Stats: Crime Rate ${zone.crimeRate}/100, Lighting ${zone.lightingLevel}%');
+      if (zone.warnings.isNotEmpty) {
+        buffer.writeln('  Active Warnings: ${zone.warnings.join(", ")}');
+      }
+      if (zone.negativeFeedbackCount > 5) {
+        buffer.writeln(
+            '  User Reports: ${zone.negativeFeedbackCount} negative reports (High Alert)');
+      }
+    }
+    return buffer.toString();
   }
 }

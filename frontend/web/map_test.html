@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delhi Safety Zones - Geo-Fencing Demo</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/@1.9.4/dist/leaflet.css" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+
+        .legend {
+            position: fixed;
+            bottom: 30px;
+            left: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+        }
+
+        .legend h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        .info-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            min-width: 250px;
+            display: none;
+        }
+
+        .info-panel.active {
+            display: block;
+        }
+
+        .info-panel h2 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .vote-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .vote-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.1s;
+        }
+
+        .vote-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .vote-btn.safe {
+            background: #4ade80;
+            color: white;
+        }
+
+        .vote-btn.danger {
+            background: #f87171;
+            color: white;
+        }
+
+        .score-display {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <div class="legend">
+        <h3>🗺️ Safety Zones</h3>
+        <div class="legend-item">
+            <div class="legend-color" style="background: rgba(74, 222, 128, 0.6);"></div>
+            <span>🟢 Safe (score ≥ 5)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: rgba(250, 204, 21, 0.6);"></div>
+            <span>🟡 Caution (-5 < score < 5)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: rgba(248, 113, 113, 0.6);"></div>
+            <span>🔴 Danger (score ≤ -5)</span>
+        </div>
+    </div>
+
+    <div class="info-panel" id="infoPanel">
+        <h2 id="zoneName">Zone Name</h2>
+        <p>Score: <span class="score-display" id="zoneScore">0</span></p>
+        <p>Status: <span id="zoneStatus">Yellow</span></p>
+        <div class="vote-buttons">
+            <button class="vote-btn safe" onclick="vote(1)">👍 Safe</button>
+            <button class="vote-btn danger" onclick="vote(-1)">👎 Danger</button>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Delhi bounds
+        const DELHI_BOUNDS = [
+            [28.40, 76.80],  // Southwest
+            [28.85, 77.45]   // Northeast
+        ];
+
+        // Initialize map centered on Delhi
+        const map = L.map('map', {
+            center: [28.6139, 77.2090],
+            zoom: 12,
+            minZoom: 11,
+            maxZoom: 18,
+            maxBounds: DELHI_BOUNDS,
+            maxBoundsViscosity: 1.0
+        });
+
+        // Add OpenStreetMap tiles (free!)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Zone data from backend (simulated here for demo)
+        const zones = {
+            "delhi_001": {
+                id: "delhi_001",
+                name: "Connaught Place",
+                bounds: [[28.6280, 77.2150], [28.6380, 77.2250]],
+                score: 8,
+                votes: []
+            },
+            "delhi_002": {
+                id: "delhi_002",
+                name: "India Gate",
+                bounds: [[28.6100, 77.2250], [28.6200, 77.2350]],
+                score: 6,
+                votes: []
+            },
+            "delhi_003": {
+                id: "delhi_003",
+                name: "Chandni Chowk",
+                bounds: [[28.6500, 77.2250], [28.6600, 77.2350]],
+                score: 0,
+                votes: []
+            },
+            "delhi_004": {
+                id: "delhi_004",
+                name: "Red Fort Area",
+                bounds: [[28.6550, 77.2350], [28.6650, 77.2450]],
+                score: 4,
+                votes: []
+            },
+            "delhi_005": {
+                id: "delhi_005",
+                name: "Old Delhi Railway Station",
+                bounds: [[28.6600, 77.2150], [28.6700, 77.2250]],
+                score: -4,
+                votes: []
+            },
+            "delhi_006": {
+                id: "delhi_006",
+                name: "Karol Bagh Market",
+                bounds: [[28.6500, 77.1850], [28.6600, 77.1950]],
+                score: 1,
+                votes: []
+            },
+            "delhi_007": {
+                id: "delhi_007",
+                name: "Lodhi Garden",
+                bounds: [[28.5900, 77.2150], [28.6000, 77.2250]],
+                score: 7,
+                votes: []
+            },
+            "delhi_008": {
+                id: "delhi_008",
+                name: "Hauz Khas Village",
+                bounds: [[28.5500, 77.1900], [28.5600, 77.2000]],
+                score: 5,
+                votes: []
+            },
+            "delhi_009": {
+                id: "delhi_009",
+                name: "Paharganj",
+                bounds: [[28.6400, 77.2050], [28.6500, 77.2150]],
+                score: -4,
+                votes: []
+            }
+        };
+
+        let selectedZoneId = null;
+        const rectangles = {};
+
+        function getZoneColor(score) {
+            if (score >= 5) return { fill: 'rgba(74, 222, 128, 0.6)', stroke: '#22c55e' };
+            if (score <= -5) return { fill: 'rgba(248, 113, 113, 0.6)', stroke: '#ef4444' };
+            return { fill: 'rgba(250, 204, 21, 0.6)', stroke: '#eab308' };
+        }
+
+        function getZoneStatus(score) {
+            if (score >= 5) return '🟢 Safe';
+            if (score <= -5) return '🔴 Danger';
+            return '🟡 Caution';
+        }
+
+        // Draw all zones
+        Object.values(zones).forEach(zone => {
+            const colors = getZoneColor(zone.score);
+            const rect = L.rectangle(zone.bounds, {
+                color: colors.stroke,
+                fillColor: colors.fill,
+                fillOpacity: 0.6,
+                weight: 2
+            }).addTo(map);
+
+            rect.bindTooltip(zone.name, { permanent: false, direction: 'center' });
+
+            rect.on('click', () => {
+                selectedZoneId = zone.id;
+                showInfoPanel(zone);
+            });
+
+            rectangles[zone.id] = rect;
+        });
+
+        function showInfoPanel(zone) {
+            document.getElementById('infoPanel').classList.add('active');
+            document.getElementById('zoneName').textContent = zone.name;
+            document.getElementById('zoneScore').textContent = zone.score;
+            document.getElementById('zoneStatus').textContent = getZoneStatus(zone.score);
+        }
+
+        function vote(value) {
+            if (!selectedZoneId) return;
+
+            const zone = zones[selectedZoneId];
+            zone.score += value;
+            zone.votes.push(value);
+
+            // Update display
+            showInfoPanel(zone);
+
+            // Update rectangle color
+            const colors = getZoneColor(zone.score);
+            rectangles[selectedZoneId].setStyle({
+                color: colors.stroke,
+                fillColor: colors.fill
+            });
+
+            console.log(`Vote submitted: ${value > 0 ? 'Safe' : 'Danger'} for ${zone.name}`);
+        }
+
+        // Close panel when clicking elsewhere
+        map.on('click', (e) => {
+            if (!e.originalEvent.target.closest('.leaflet-interactive')) {
+                document.getElementById('infoPanel').classList.remove('active');
+                selectedZoneId = null;
+            }
+        });
+    </script>
+</body>
+
+</html>
