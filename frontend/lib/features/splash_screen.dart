@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/wireframe_globe.dart';
+import '../widgets/nebula_background.dart';
+import '../widgets/glitch_text.dart';
 import 'auth/auth_dialogs.dart';
+import '../core/shader_manager.dart';
 
 /// Splash Screen for SafeTravel App
 /// Uses the existing WireframeGlobe widget and matches the app's dark theme
@@ -37,7 +40,15 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
     _initializeAnimations();
+    _initializeShaders();
     _startSplashSequence();
+  }
+
+  // Pre-load shaders without async blocking
+  void _initializeShaders() {
+    ShaderManager().initialize().then((_) {
+      print("Shaders initialized");
+    });
   }
 
   void _initializeAnimations() {
@@ -120,27 +131,39 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: const Color(0xFF050505),
       body: Stack(
         children: [
-          // Gradient background
-          _buildBackground(),
-          // Main content
+          // 1. High-End Nebula Background
+          const NebulaBackground(),
+          
+          // 2. Main Content
           FadeTransition(
             opacity: _fadeAnimation,
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Spacer(flex: 2),
-                  // Wireframe Globe
-                  const WireframeGlobe(
-                    size: 200,
-                    color: AppColors.primary,
-                    rotationDuration: Duration(seconds: 8),
+                  const Spacer(flex: 3),
+                  
+                  // Wireframe Globe with Glow
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: const Color(0xFF00F0FF).withOpacity(0.2), blurRadius: 50, spreadRadius: 10),
+                      ],
+                    ),
+                    child: const WireframeGlobe(
+                      size: 220,
+                      color: Color(0xFF00F0FF),
+                      rotationDuration: Duration(seconds: 12),
+                    ),
                   ),
-                  const SizedBox(height: 48),
-                  // App Title
+                  
+                  const SizedBox(height: 64),
+                  
+                  // Glitch Title
                   SlideTransition(
                     position: _textSlideAnimation,
                     child: FadeTransition(
@@ -150,25 +173,27 @@ class _SplashScreenState extends State<SplashScreen>
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text('🛡️', style: TextStyle(fontSize: 32)),
-                              const SizedBox(width: 12),
-                              Text(
-                                'SafeTravel',
-                                style: GoogleFonts.inter(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textPrimary,
+                              const Text('🛡️', style: TextStyle(fontSize: 42)),
+                              const SizedBox(width: 16),
+                              GlitchText(
+                                text: 'SafeTravel',
+                                style: GoogleFonts.syncopate(
+                                  fontSize: 42,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: -1.0,
                                 ),
+                                interval: const Duration(seconds: 2),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
                           Text(
                             'Navigate India Safely',
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              color: AppColors.textSecondary,
-                              letterSpacing: 2,
+                            style: GoogleFonts.spaceMono(
+                              fontSize: 14,
+                              color: const Color(0xFF00F0FF),
+                              letterSpacing: 4,
                             ),
                           ),
                         ],
@@ -176,9 +201,21 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                   const Spacer(),
-                  // Progress section
+                  
+                  // Cyberpunk Progress Section
                   _buildProgressSection(),
+                  
                   const Spacer(),
+                  
+                  // Footer Version
+                  Text(
+                    'SYSTEM V3.0.0', 
+                    style: GoogleFonts.spaceMono(
+                      color: Colors.white10, 
+                      fontSize: 10
+                    )
+                  ),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
@@ -189,117 +226,86 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Widget _buildBackground() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.bgDark,
-      ),
-      child: Stack(
-        children: [
-          // Top-left gradient glow
-          Positioned(
-            top: -150,
-            left: -150,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.primary.withOpacity(0.2),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Bottom-right gradient glow
-          Positioned(
-            bottom: -100,
-            right: -100,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.accent.withOpacity(0.15),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    // Replaced by NebulaBackground, keeping this empty or removing if unused.
+    return const SizedBox.shrink();
   }
 
   Widget _buildProgressSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 48),
+    return Container(
+      width: 300,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF101010).withOpacity(0.8),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
       child: Column(
         children: [
-          // Status text
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: Text(
-              _statusText,
-              key: ValueKey<String>(_statusText),
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 12,
-                color: AppColors.primary,
-                letterSpacing: 1.5,
+          // Status Text
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: Text(
+                '> $_statusText',
+                key: ValueKey<String>(_statusText),
+                style: GoogleFonts.spaceMono(
+                  fontSize: 12,
+                  color: const Color(0xFF00F0FF),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 16),
-          // Progress bar
+          
+          // Cyber Progress Bar
           AnimatedBuilder(
             animation: _progressAnimation,
             builder: (context, child) {
-              return Container(
-                height: 3,
-                width: 200,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    width: 200 * _progressAnimation.value,
+              return Stack(
+                children: [
+                  // Track
+                  Container(
+                    height: 4,
+                    width: double.infinity,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, AppColors.accent],
-                      ),
-                      borderRadius: BorderRadius.circular(2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.5),
-                          blurRadius: 8,
-                        ),
-                      ],
+                      color: Colors.white.withOpacity(0.1),
                     ),
                   ),
-                ),
+                  // Fill
+                  Container(
+                    height: 4,
+                    width: 250 * _progressAnimation.value,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00F0FF), Color(0xFF8B5CF6)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(color: const Color(0xFF00F0FF).withOpacity(0.8), blurRadius: 10, spreadRadius: 1),
+                      ]
+                    ),
+                  ),
+                ],
               );
             },
           ),
+          
           const SizedBox(height: 12),
-          // Percentage
-          AnimatedBuilder(
-            animation: _progressAnimation,
-            builder: (context, child) {
-              return Text(
-                '${(_progressAnimation.value * 100).toInt()}%',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 11,
-                  color: AppColors.textSecondary,
-                ),
-              );
-            },
+          
+          Align(
+            alignment: Alignment.centerRight,
+            child: AnimatedBuilder(
+              animation: _progressAnimation,
+              builder: (context, child) {
+                return Text(
+                  '${(_progressAnimation.value * 100).toInt()}%',
+                  style: GoogleFonts.spaceMono(
+                    fontSize: 12,
+                    color: Colors.white54,
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),

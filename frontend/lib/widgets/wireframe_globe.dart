@@ -4,6 +4,8 @@ import '../app/theme.dart';
 
 /// Wireframe Globe Widget
 /// A 3D-style rotating wireframe sphere using CustomPainter
+import 'package:flutter_animate/flutter_animate.dart';
+
 class WireframeGlobe extends StatefulWidget {
   final double size;
   final Color color;
@@ -52,6 +54,23 @@ class _WireframeGlobeState extends State<WireframeGlobe>
           ),
         );
       },
+    )
+    .animate(onPlay: (controller) => controller.repeat(reverse: true))
+    .scaleXY(
+      begin: 0.95, 
+      end: 1.05, 
+      duration: 2000.ms, 
+      curve: Curves.easeInOutSine // "Breathing" effect
+    )
+    .animate() // Separate chain for entrance
+    .scale(
+      duration: 1200.ms, 
+      curve: Curves.elasticOut // GSAP-style Elastic Entrance
+    )
+    .shimmer(
+      delay: 1000.ms,
+      duration: 2000.ms,
+      color: Colors.white.withOpacity(0.5)
     );
   }
 }

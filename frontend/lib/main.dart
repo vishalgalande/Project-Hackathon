@@ -13,6 +13,7 @@ import 'pages/intel_page.dart';
 import 'pages/admin_page.dart';
 import 'features/transit_tracker_screen.dart';
 import 'core/shader_manager.dart';
+import 'features/about/about_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,7 +48,7 @@ void main() async {
   }
 
   // Precache Shaders
-  await ShaderManager().initialize();
+  // ShaderManager().initialize() is now handled in SplashScreen/LandingPage lazily
 
   runApp(
     const ProviderScope(
@@ -96,6 +97,11 @@ final GoRouter _router = GoRouter(
       path: '/admin',
       name: 'admin',
       builder: (context, state) => const AdminPage(),
+    ),
+    GoRoute(
+      path: '/about',
+      name: 'about',
+      builder: (context, state) => const AboutPage(),
     ),
   ],
 );

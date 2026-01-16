@@ -26,6 +26,7 @@ class _LiquidButtonState extends State<LiquidButton> with SingleTickerProviderSt
       onExit: (_) => setState(() => _isHovering = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
         child: Container(
           decoration: BoxDecoration(
