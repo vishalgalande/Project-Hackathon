@@ -218,6 +218,19 @@ class MockDataGenerator:
         for continent, countries in self.regions.items():
             for country_code, country_data in countries.items():
                 for city in country_data["cities"]:
+                    # Inject Real Kolkata Routes
+                    if city["name"] == "Kolkata":
+                        kolkata_routes = self._get_kolkata_routes()
+                        for kr in kolkata_routes:
+                            kr["id"] = f"route_{route_id}"
+                            kr["city"] = "Kolkata"
+                            kr["country"] = "India" 
+                            kr["country_code"] = "india" 
+                            kr["continent"] = "asia"
+                            routes.append(kr)
+                            route_id += 1
+                        continue 
+
                     num_routes = city["routes"]
                     city_stops = city.get("stops", [])
                     
@@ -291,6 +304,125 @@ class MockDataGenerator:
         
         return routes
     
+    def _get_kolkata_routes(self):
+        """Hardcoded real-world routes for Kolkata"""
+        # Coordinates (approx)
+        sealdah = {"lat": 22.5660, "lng": 88.3685}
+        thakurpukur = {"lat": 22.4650, "lng": 88.3075}
+        bbd_bag = {"lat": 22.5719, "lng": 88.3489}
+        matpukur = {"lat": 22.5500, "lng": 88.4000} 
+        behala = {"lat": 22.4988, "lng": 88.3106}
+        esplanade = {"lat": 22.5650, "lng": 88.3517}
+        howrah = {"lat": 22.5830, "lng": 88.3425} 
+        ultadanga = {"lat": 22.5940, "lng": 88.3860}
+        dakshineswar = {"lat": 22.6550, "lng": 88.3575}
+        kavi_subhash = {"lat": 22.4719, "lng": 88.3981}
+        salt_lake_v = {"lat": 22.5770, "lng": 88.4334}
+        joka = {"lat": 22.4524, "lng": 88.2997}
+        taratala = {"lat": 22.5140, "lng": 88.3140}
+        
+        park_street = {"lat": 22.5530, "lng": 88.3520}
+        sector_v = {"lat": 22.5800, "lng": 88.4300}
+
+        return [
+            # BUS ROUTES
+            {
+                "route_number": "3A",
+                "name": "Kolkata Bus 3A (Sealdah - Thakurpukur)",
+                "type": "Bus",
+                "active": True,
+                "stops": [{"name": "Sealdah", **sealdah}, {"name": "BBD Bag", **bbd_bag}, {"name": "Thakurpukur", **thakurpukur}],
+                "path": [sealdah, bbd_bag, {"lat": 22.5, "lng": 88.32}, thakurpukur],
+                "frequency": "15 mins"
+            },
+            {
+                "route_number": "38",
+                "name": "Kolkata Bus 38 (Sealdah - Matpukur)",
+                "type": "Bus",
+                "active": True,
+                "stops": [{"name": "Sealdah", **sealdah}, {"name": "Matpukur", **matpukur}],
+                "path": [sealdah, {"lat": 22.56, "lng": 88.38}, matpukur],
+                "frequency": "20 mins"
+            },
+            {
+                "route_number": "14",
+                "name": "Kolkata Bus 14 (Behala - Esplanade)",
+                "type": "Bus",
+                "active": True,
+                "stops": [{"name": "Behala", **behala}, {"name": "Esplanade", **esplanade}],
+                "path": [behala, taratala, esplanade],
+                "frequency": "10 mins"
+            },
+            {
+                "route_number": "3",
+                "name": "Kolkata Bus 3 (Dahighat - Sealdah)",
+                "type": "Bus",
+                "active": True,
+                "stops": [{"name": "Dahighat", **joka}, {"name": "Hazra", "lat": 22.52, "lng": 88.35}, {"name": "Esplanade", **esplanade}, {"name": "Sealdah", **sealdah}],
+                "path": [joka, {"lat": 22.52, "lng": 88.35}, park_street, esplanade, sealdah],
+                "frequency": "12 mins"
+            },
+            {
+                "route_number": "15",
+                "name": "Kolkata Bus 15 (Ultadanga - Howrah)",
+                "type": "Bus",
+                "active": True,
+                "stops": [{"name": "Ultadanga", **ultadanga}, {"name": "Howrah", **howrah}],
+                "path": [ultadanga, {"lat": 22.59, "lng": 88.37}, howrah],
+                "frequency": "15 mins"
+            },
+            # METRO ROUTES
+            {
+                "route_number": "Line 1",
+                "name": "Metro Line 1 (Blue) - North-South",
+                "type": "Metro",
+                "active": True,
+                "stops": [{"name": "Dakshineswar", **dakshineswar}, {"name": "Esplanade", **esplanade}, {"name": "Park Street", **park_street}, {"name": "Kavi Subhash", **kavi_subhash}],
+                "path": [dakshineswar, {"lat": 22.6, "lng": 88.36}, esplanade, park_street, {"lat": 22.5, "lng": 88.35}, kavi_subhash],
+                "frequency": "5 mins",
+                "color": "#0000FF"
+            },
+            {
+                "route_number": "Line 2",
+                "name": "Metro Line 2 (Green) - East-West",
+                "type": "Metro",
+                "active": True,
+                "stops": [{"name": "Sector V", **sector_v}, {"name": "Sealdah", **sealdah}],
+                "path": [sector_v, {"lat": 22.57, "lng": 88.4}, sealdah], 
+                "frequency": "10 mins",
+                "color": "#008000"
+            },
+            {
+                "route_number": "Line 3",
+                "name": "Metro Line 3 (Purple) - Joka-Taratala",
+                "type": "Metro",
+                "active": True,
+                "stops": [{"name": "Joka", **joka}, {"name": "Taratala", **taratala}],
+                "path": [joka, {"lat": 22.48, "lng": 88.31}, taratala],
+                "frequency": "20 mins",
+                "color": "#800080"
+            },
+             # TRAIN ROUTES
+            {
+                "route_number": "Local",
+                "name": "Local Train (Sealdah - Ranaghat)",
+                "type": "Light Rail", 
+                "active": True,
+                "stops": [{"name": "Sealdah", **sealdah}, {"name": "Ranaghat", "lat": 23.18, "lng": 88.56}],
+                "path": [sealdah, {"lat": 23.0, "lng": 88.4}, {"lat": 23.18, "lng": 88.56}],
+                "frequency": "30 mins"
+            },
+            {
+                "route_number": "Local",
+                "name": "Local Train (Howrah - Kharagpur)",
+                "type": "Light Rail",
+                "active": True,
+                "stops": [{"name": "Howrah", **howrah}, {"name": "Kharagpur", "lat": 22.33, "lng": 87.32}],
+                "path": [howrah, {"lat": 22.4, "lng": 88.0}, {"lat": 22.33, "lng": 87.32}],
+                "frequency": "45 mins"
+            }
+        ]
+
     def _generate_vehicles(self):
         """Generate vehicle positions for active routes"""
         vehicles = []

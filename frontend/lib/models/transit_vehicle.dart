@@ -21,6 +21,9 @@ class TransitVehicle {
       currentPathIndex; // Index in the polyline coordinate list (supports fractional)
   final int pathDirection; // 1 for forward, -1 for backward
 
+  final String? city;
+  final String? country;
+
   const TransitVehicle({
     required this.id,
     required this.name,
@@ -34,6 +37,8 @@ class TransitVehicle {
     this.routeId,
     this.currentPathIndex = 0.0,
     this.pathDirection = 1,
+    this.city,
+    this.country,
   });
 
   TransitVehicle copyWith({
@@ -49,6 +54,8 @@ class TransitVehicle {
     String? routeId,
     double? currentPathIndex,
     int? pathDirection,
+    String? city,
+    String? country,
   }) {
     return TransitVehicle(
       id: id ?? this.id,
@@ -63,6 +70,8 @@ class TransitVehicle {
       routeId: routeId ?? this.routeId,
       currentPathIndex: currentPathIndex ?? this.currentPathIndex,
       pathDirection: pathDirection ?? this.pathDirection,
+      city: city ?? this.city,
+      country: country ?? this.country,
     );
   }
 }
@@ -85,9 +94,16 @@ class TransitRoute {
   final List<TransitStop> stops;
   final Color? color; // Route specific color (e.g. Blue line)
 
+  final String? city;
+  final String? country;
+  final TransitType type;
+
   const TransitRoute(
       {required this.id,
       required this.polyline,
       required this.stops,
-      this.color});
+      this.color,
+      this.city,
+      this.country,
+      this.type = TransitType.bus});
 }

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:go_router/go_router.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'report_dialog.dart';
 import '../models/transit_vehicle.dart';
 import '../services/mock_transit_service.dart';
+import '../services/transit_api_service.dart';
+import 'animations.dart';
+import 'dart:ui' as dart_ui;
 
 class TransitTrackerScreen extends StatefulWidget {
   const TransitTrackerScreen({super.key});
@@ -15,12 +17,13 @@ class TransitTrackerScreen extends StatefulWidget {
   State<TransitTrackerScreen> createState() => _TransitTrackerScreenState();
 }
 
-class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
+class _TransitTrackerScreenState extends State<TransitTrackerScreen>
+    with SingleTickerProviderStateMixin {
   final MapController _mapController = MapController();
-  final DraggableScrollableController _sheetController =
-      DraggableScrollableController();
 
   final MockTransitService _mockService = MockTransitService();
+  final TransitApiService _apiService = TransitApiService();
+
   List<TransitVehicle> _vehicles = [];
   StreamSubscription<List<TransitVehicle>>? _vehicleSubscription;
 
@@ -34,34 +37,117 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
   StreamSubscription<QuerySnapshot>? _reportsSubscription;
   bool _isSheetExpanded = false;
 
+  // Search State
+  String _searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
+
+  double _currentZoom = 12.0;
+
+  // From-To Route Search State
+  String _fromPlace = "";
+  String _toPlace = "";
+  TransitType? _selectedTransitType;
+  bool _isSearchExpanded = false;
+
+  List<String> _suggestedCities = const [
+    "New Delhi",
+    "Mumbai",
+    "Kolkata",
+    "Chennai",
+    "Bangalore",
+    "Hyderabad",
+    "Pune",
+    "Ahmedabad",
+    "Jaipur",
+    "Lucknow"
+  ];
+
   @override
   void initState() {
     super.initState();
+    // Use this as TickerProvider. Since we are in State class, we need SingleTickerProviderStateMixin
+    // However, expanding class text is hard via replace, so we'll use a local controller approach or TickerProvider
+    // Simpler: Just implement manual interpolation in a timer or use a simple flutter animation controller created on fly
+
+    _loadData(); // Fetch API data
+
+    // Start simulation (will use API routes once loaded, or default)
     _mockService.startSimulation();
     _vehicleSubscription = _mockService.vehiclesStream.listen((vehicles) {
-      setState(() {
-        _vehicles = vehicles;
-      });
-    });
-
-    _listenToReports();
-    _sheetController.addListener(() {
-      final expanded = _sheetController.size > 0.15;
-      if (expanded != _isSheetExpanded) {
-        setState(() => _isSheetExpanded = expanded);
+      if (mounted) {
+        setState(() {
+          _vehicles = vehicles;
+        });
       }
     });
 
-    // Tap outside to clear selection
+    _listenToReports();
+  }
+
+  Future<void> _loadData() async {
+    // 1. Fetch Cities for suggestions
+    final cities = await _apiService.fetchCities();
+
+    // 2. Fetch Routes to populate map
+    final routes = await _apiService.fetchAllRoutes();
+
+    if (mounted) {
+      setState(() {
+        _suggestedCities = cities;
+      });
+      // Feed routes into mock service
+      _mockService.inputRoutes(routes);
+    }
+  }
+
+  List<TransitVehicle> get _filteredVehicles {
+    List<TransitVehicle> result = _vehicles;
+
+    // 1. Filter by Search Query
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase().trim();
+
+      // Handle "Source to Destination" search
+      if (query.contains(' to ')) {
+        final parts = query.split(' to ');
+        if (parts.length >= 2) {
+          final start = parts[0].trim();
+          final end = parts[1].trim();
+          if (start.isNotEmpty && end.isNotEmpty) {
+            result = result.where((v) {
+              final routeLower = v.routeName.toLowerCase();
+              return routeLower.contains(start) && routeLower.contains(end);
+            }).toList();
+          }
+        }
+      } else {
+        // Standard Search
+        result = result.where((v) {
+          final matchRoute = v.routeName.toLowerCase().contains(query) ||
+              v.agency.toLowerCase().contains(query) ||
+              v.name.toLowerCase().contains(query);
+          final matchCity =
+              v.city != null && v.city!.toLowerCase().contains(query);
+          return matchRoute || matchCity;
+        }).toList();
+      }
+    }
+
+    // 2. Filter by Transit Type (Global Filter)
+    if (_selectedTransitType != null) {
+      result = result.where((v) => v.type == _selectedTransitType).toList();
+    }
+
+    return result;
   }
 
   @override
   void dispose() {
+    _searchController.dispose();
     _reportsSubscription?.cancel();
     _vehicleSubscription?.cancel();
     _mockService.stopSimulation();
     _mapController.dispose();
-    _sheetController.dispose();
     super.dispose();
   }
 
@@ -80,7 +166,6 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
           final vehicleId = data['vehicle_id'];
 
           if (vehicleId != null) {
-            // In a real app we would filter this from the stream or backend
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                   content: Text(
@@ -99,14 +184,11 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
     );
 
     if (result != null) {
-      // Optimistic UI update
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Report submitted: ${result['type']}"),
-          backgroundColor: Colors.green,
-        ),
+            content: Text("Report submitted: ${result['type']}"),
+            backgroundColor: Colors.green),
       );
-
       try {
         await FirebaseFirestore.instance.collection('reports').add({
           'vehicle_id': result['vehicle_id'] ?? 'unknown',
@@ -119,14 +201,42 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
     }
   }
 
-  void _toggleSheet() {
-    if (_sheetController.size < 0.2) {
-      _sheetController.animateTo(0.5,
-          duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-    } else {
-      _sheetController.animateTo(0.08,
-          duration: const Duration(milliseconds: 300), curve: Curves.easeIn);
-    }
+  // Animated Map Move
+  void _animatedMapMove(LatLng destLocation, double destZoom) {
+    // Create some variables
+    final latTween = Tween<double>(
+        begin: _mapController.camera.center.latitude,
+        end: destLocation.latitude);
+    final lngTween = Tween<double>(
+        begin: _mapController.camera.center.longitude,
+        end: destLocation.longitude);
+    final zoomTween =
+        Tween<double>(begin: _mapController.camera.zoom, end: destZoom);
+
+    // Create a controller
+    final controller = AnimationController(
+        duration: const Duration(milliseconds: 1500), vsync: this);
+
+    // The animation curve
+    final Animation<double> animation =
+        CurvedAnimation(parent: controller, curve: Curves.fastOutSlowIn);
+
+    controller.addListener(() {
+      _mapController.move(
+        LatLng(latTween.evaluate(animation), lngTween.evaluate(animation)),
+        zoomTween.evaluate(animation),
+      );
+    });
+
+    animation.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        controller.dispose();
+      } else if (status == AnimationStatus.dismissed) {
+        controller.dispose();
+      }
+    });
+
+    controller.forward();
   }
 
   void _selectVehicle(TransitVehicle v) {
@@ -134,8 +244,8 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
       _selectedVehicleId = v.id;
       _selectedRoute = _mockService.getRoute(v.routeId);
     });
-
-    _mapController.move(v.position, 15);
+    // Smooth transition instead of jump
+    _animatedMapMove(v.position, 15);
   }
 
   void _deselect() {
@@ -147,29 +257,365 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
     }
   }
 
+  // Get destinations reachable from the selected origin
+  List<String> _getToSuggestions(String from) {
+    if (from.isEmpty) return [];
+    final destinations = <String>{};
+    for (final v in _vehicles) {
+      final routeName = v.routeName.toLowerCase();
+      final fromLower = from.toLowerCase();
+      if (routeName.contains(fromLower)) {
+        // Extract destination from route name
+        final parts = v.routeName.split(' - ');
+        if (parts.length >= 2) {
+          // If "from" matches start, add the end
+          if (parts.first.toLowerCase().contains(fromLower)) {
+            destinations.add(parts.last.trim());
+          }
+          // If "from" matches end, add the start
+          if (parts.last.toLowerCase().contains(fromLower)) {
+            destinations.add(parts.first.trim());
+          }
+        }
+      }
+    }
+    return destinations.take(10).toList();
+  }
+
+  // Build route search field with autocomplete
+  Widget _buildRouteSearchField({
+    required String label,
+    required String value,
+    required Function(String) onChanged,
+    required List<String> suggestions,
+    bool enabled = true,
+  }) {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.grey[900], // Same color for both From and To
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 45,
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[400],
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Container(width: 1, height: 30, color: Colors.grey[700]),
+          Expanded(
+            child: Autocomplete<String>(
+              optionsBuilder: (textEditingValue) {
+                if (textEditingValue.text.isEmpty) {
+                  return suggestions.take(6);
+                }
+                return suggestions
+                    .where((s) => s
+                        .toLowerCase()
+                        .contains(textEditingValue.text.toLowerCase()))
+                    .take(6);
+              },
+              onSelected: onChanged,
+              optionsViewBuilder: (context, onSelected, options) {
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 250,
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.grey[850]!, Colors.grey[900]!],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        itemBuilder: (context, index) {
+                          final option = options.elementAt(index);
+                          return InkWell(
+                            onTap: () => onSelected(option),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 12),
+                              child: Text(
+                                option,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
+              fieldViewBuilder:
+                  (context, controller, focusNode, onEditingComplete) {
+                if (controller.text != value) {
+                  controller.text = value;
+                }
+                return TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  enabled: enabled,
+                  onChanged: onChanged,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: enabled ? "Enter $label" : "Enter From first",
+                    hintStyle: TextStyle(
+                      color: Colors.grey[500],
+                      fontWeight: FontWeight.normal,
+                      fontSize: 14,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Show all routes dialog
+  void _showAllRoutesDialog(
+      BuildContext context, String fromPlace, String toPlace) {
+    // Get ALL vehicles (not unique), filtered by From/To if specified
+    final trainVehicles = <TransitVehicle>[];
+    final busVehicles = <TransitVehicle>[];
+    final metroVehicles = <TransitVehicle>[];
+
+    for (final v in _vehicles) {
+      // Filter by From/To if specified
+      final routeLower = v.routeName.toLowerCase();
+      final fromLower = fromPlace.toLowerCase();
+      final toLower = toPlace.toLowerCase();
+
+      bool matchesFilter = true;
+      if (fromPlace.isNotEmpty || toPlace.isNotEmpty) {
+        // If both are specified, route must contain both
+        if (fromPlace.isNotEmpty && toPlace.isNotEmpty) {
+          matchesFilter =
+              routeLower.contains(fromLower) && routeLower.contains(toLower);
+        } else if (fromPlace.isNotEmpty) {
+          // Just From specified
+          matchesFilter = routeLower.contains(fromLower);
+        } else if (toPlace.isNotEmpty) {
+          // Just To specified
+          matchesFilter = routeLower.contains(toLower);
+        }
+      }
+
+      if (!matchesFilter) continue;
+
+      if (v.type == TransitType.train) {
+        trainVehicles.add(v);
+      } else if (v.type == TransitType.bus) {
+        busVehicles.add(v);
+      } else if (v.type == TransitType.metro) {
+        metroVehicles.add(v);
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[600],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Title
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  "All Available Routes",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              // Routes List
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    // Trains Section
+                    if (trainVehicles.isNotEmpty) ...[
+                      _buildRouteSection("🚂 Trains (${trainVehicles.length})",
+                          trainVehicles, Colors.red),
+                      const SizedBox(height: 16),
+                    ],
+                    // Buses Section
+                    if (busVehicles.isNotEmpty) ...[
+                      _buildRouteSection("🚌 Buses (${busVehicles.length})",
+                          busVehicles, Colors.orange),
+                      const SizedBox(height: 16),
+                    ],
+                    // Metro Section
+                    if (metroVehicles.isNotEmpty) ...[
+                      _buildRouteSection("🚇 Metro (${metroVehicles.length})",
+                          metroVehicles, Colors.blue),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRouteSection(
+      String title, List<TransitVehicle> routes, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: color,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...routes.take(10).map((v) => GestureDetector(
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  _searchQuery = v.routeName;
+                });
+                _selectVehicle(v);
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[800],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        v.type == TransitType.train
+                            ? Icons.train
+                            : v.type == TransitType.bus
+                                ? Icons.directions_bus
+                                : Icons.subway,
+                        color: color,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            v.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "${v.routeName} • ${v.agency}",
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: Colors.grey[500]),
+                  ],
+                ),
+              ),
+            )),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
           GestureDetector(
-            onTap: _deselect, // Tap map to clear
+            onTap: () {
+              _deselect();
+              FocusScope.of(context).unfocus();
+            },
             child: FlutterMap(
               mapController: _mapController,
-              options: const MapOptions(
+              options: MapOptions(
                   initialCenter: _initialCenter,
                   initialZoom: 12,
+                  onPositionChanged: (pos, hasGesture) {
+                    if (pos.zoom != null && pos.zoom != _currentZoom) {
+                      setState(() => _currentZoom = pos.zoom!);
+                    }
+                  },
                   interactionOptions:
-                      InteractionOptions(flags: InteractiveFlag.all)),
+                      const InteractionOptions(flags: InteractiveFlag.all)),
               children: [
                 TileLayer(
-                  // Google Hybrid (Satellite + Roads)
                   urlTemplate:
                       'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
                   subdomains: const ['mt0', 'mt1', 'mt2', 'mt3'],
                 ),
-
-                // Route Polyline
                 if (_selectedRoute != null)
                   PolylineLayer(
                     polylines: [
@@ -180,8 +626,6 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
                       ),
                     ],
                   ),
-
-                // Route Stops (Next 2 Only)
                 if (_selectedRoute != null && _selectedVehicleId != null)
                   MarkerLayer(
                     markers: _getNextStops(
@@ -190,81 +634,158 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
                             _selectedRoute!)
                         .map((stop) => Marker(
                               point: stop.position,
-                              width: 20, // Slightly larger for visibility
+                              width: 20,
                               height: 20,
                               child: Container(
                                 decoration: BoxDecoration(
                                     color: Colors.white,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                        color: Colors.black, // High contrast
-                                        width: 4)),
+                                        color: Colors.black, width: 4)),
                               ),
                             ))
                         .toList(),
                   ),
-
-                // Vehicle Markers
                 MarkerLayer(
-                  markers: _vehicles.map((v) => _buildMarker(v)).toList(),
+                  // Hide ALL markers when zoomed out (< 10), unless searching or vehicle selected
+                  markers: (_currentZoom < 10.0 &&
+                          _searchQuery.isEmpty &&
+                          _selectedVehicleId == null &&
+                          _selectedTransitType == null)
+                      ? []
+                      : _filteredVehicles.map((v) => _buildMarker(v)).toList(),
                 ),
               ],
             ),
           ),
 
-          // Back Button
+          // Top-Left Cluster: Search Panel + Filter Chips
           Positioned(
-            top: 40,
+            top: 20,
             left: 20,
-            child: FloatingActionButton(
-              mini: true,
-              backgroundColor: Colors.white,
-              child: const Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () => context.go('/'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Animated Glass Search Panel
+                SlideFadeEntry(
+                  delay: const Duration(milliseconds: 200),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: BackdropFilter(
+                      filter: dart_ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeOutBack,
+                        width: _isSearchExpanded
+                            ? MediaQuery.of(context).size.width * 0.35
+                            : 50,
+                        // Reduced height from 360 to 280 to fit content tightly
+                        height: _isSearchExpanded ? 280 : 50,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(20),
+                          border:
+                              Border.all(color: Colors.white.withOpacity(0.1)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            )
+                          ],
+                        ),
+                        child: _isSearchExpanded
+                            ? _buildExpandedSearchPanel()
+                            : BouncingButton(
+                                onTap: () {
+                                  setState(() => _isSearchExpanded = true);
+                                },
+                                child: const Center(
+                                  child:
+                                      Icon(Icons.search, color: Colors.white),
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Filter Chips (placed below search, VERTICAL alignment)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (int i = 0; i < TransitType.values.length + 1; i++)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: SlideFadeEntry(
+                          delay: Duration(milliseconds: 400 + (i * 100)),
+                          direction: Axis.horizontal,
+                          child: _buildFilterChip(
+                              i == 0 ? null : TransitType.values[i - 1]),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
             ),
           ),
 
-          // Report Button
+          // Report Button - Only visible when menu is CLOSED
+          if (_selectedVehicleId != null && !_isSheetExpanded)
+            Positioned(
+              bottom: 170,
+              right: 20,
+              child: FloatingActionButton(
+                heroTag: "report_btn",
+                backgroundColor: Colors.redAccent,
+                child: const Icon(Icons.report_problem, color: Colors.white),
+                onPressed: _onReportPressed,
+              ),
+            ),
+
+          // Round FAB Button with Spin Animation
           Positioned(
-            top: 40,
+            bottom: 100,
             right: 20,
-            child: FloatingActionButton.extended(
-              backgroundColor: Colors.redAccent,
-              icon: const Icon(Icons.report_problem, color: Colors.white),
-              label:
-                  const Text("Report", style: TextStyle(color: Colors.white)),
-              onPressed: _onReportPressed,
+            child: AnimatedRotation(
+              turns: _isSheetExpanded ? 0.5 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: FloatingActionButton(
+                heroTag: "transit_btn",
+                backgroundColor: const Color(0xFF9C27B0), // Purple
+                child: Icon(
+                  _isSheetExpanded ? Icons.close : Icons.directions_transit,
+                  color: Colors.white,
+                ),
+                onPressed: () =>
+                    setState(() => _isSheetExpanded = !_isSheetExpanded),
+              ),
             ),
           ),
 
-          // Bottom Sheet
-          DraggableScrollableSheet(
-            controller: _sheetController,
-            initialChildSize: 0.08, // Start minimized
-            minChildSize: 0.08,
-            maxChildSize: 0.8,
-            snap: true,
-            snapSizes: const [0.08, 0.5, 0.8],
-            builder: (context, scrollController) {
-              // Filter vehicles based on context
-              List<TransitVehicle> nearbyVehicles;
+          // Bottom Slide-Up Panel (35% height)
+          Builder(
+            builder: (context) {
               final distance = const Distance();
+              final sourceList = _filteredVehicles;
+              List<TransitVehicle> nearbyVehicles;
 
               if (_selectedVehicleId != null) {
-                // If a vehicle is selected, show only vehicles in the same region (within 25km)
-                // This ensures if you look at Kolkata, you only see Kolkata vehicles
                 final selectedVehicle =
                     _vehicles.firstWhere((v) => v.id == _selectedVehicleId);
-                nearbyVehicles = _vehicles
+                nearbyVehicles = sourceList
                     .where((v) =>
                         v.id != selectedVehicle.id &&
                         distance.as(LengthUnit.Kilometer, v.position,
                                 selectedVehicle.position) <
                             25)
                     .toList();
+              } else if (_searchQuery.isNotEmpty) {
+                nearbyVehicles = sourceList;
               } else {
-                // Default: Show vehicles near the map center
-                nearbyVehicles = _vehicles
+                nearbyVehicles = sourceList
                     .where((v) =>
                         distance.as(LengthUnit.Kilometer, v.position,
                             _mapController.camera.center) <
@@ -272,159 +793,340 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
                     .toList();
               }
 
-              return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
-                ),
-                child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  children: [
-                    // Handle / Arrow Toggle
-                    GestureDetector(
-                      onTap: _toggleSheet,
-                      child: Container(
-                        color: Colors.transparent, // Hit area
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Column(
-                          children: [
-                            // Single Black Arrow
-                            Icon(
-                              _isSheetExpanded
-                                  ? Icons.keyboard_arrow_down
-                                  : Icons.keyboard_arrow_up,
-                              color: Colors.black, // Clear visibility
-                              size: 32,
-                            ),
-                            // Hide text when minimized to keep it clean
-                            if (_isSheetExpanded)
+              final panelWidth = MediaQuery.of(context).size.width * 0.25;
+
+              return AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                top:
+                    _isSheetExpanded ? 100 : MediaQuery.of(context).size.height,
+                bottom: 0,
+                right: 0,
+                width: panelWidth,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: _isSheetExpanded ? 1.0 : 0.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.grey[900]!,
+                          Colors.black,
+                        ],
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, -5),
+                        )
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // Header with Report Button
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
                               Text(
-                                "Show Nearby Transit",
-                                style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-                    if (_selectedRoute != null &&
-                        _selectedVehicleId != null) ...[
-                      // Active Route Details (Next Stops) - DARK THEME
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                            color: Colors.grey[900], // Dark Background
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              )
-                            ],
-                            border: Border.all(color: Colors.grey[800]!)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.alt_route, color: Colors.blueAccent),
-                                const SizedBox(width: 8),
-                                const Text("Upcoming Stops",
-                                    style: TextStyle(
-                                        color: Colors.white, // White text
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16)),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // Next Stops Only
-                            ..._getNextStops(
-                                    _vehicles.firstWhere(
-                                        (v) => v.id == _selectedVehicleId),
-                                    _selectedRoute!)
-                                .map((s) {
-                              final arrivalTime = DateTime.now()
-                                  .add(Duration(minutes: s.arrivalTimeOffset));
-                              final timeString =
-                                  "${arrivalTime.hour}:${arrivalTime.minute.toString().padLeft(2, '0')}";
-
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8),
-                                child: Row(
-                                  children: [
-                                    // Timeline dot
-                                    Container(
-                                      margin: const EdgeInsets.symmetric(
-                                          horizontal: 4),
-                                      width: 12,
-                                      height: 12,
-                                      decoration: BoxDecoration(
-                                          color: Colors.cyanAccent, // High vis
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                              color: Colors.white, width: 2)),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                        child: Text(s.name,
-                                            style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 14))),
-                                    Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                            color: s.arrivalTimeOffset == 0
-                                                ? Colors.green
-                                                : Colors.grey[800],
-                                            borderRadius:
-                                                BorderRadius.circular(4)),
-                                        child: Text(
-                                            s.arrivalTimeOffset == 0
-                                                ? "Now"
-                                                : timeString,
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white)))
-                                  ],
+                                _selectedVehicleId != null
+                                    ? "Current Transit"
+                                    : "Nearby Transit",
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
-                              );
-                            }),
-                          ],
+                              ),
+                              Row(
+                                children: [
+                                  if (_selectedVehicleId != null)
+                                    GestureDetector(
+                                      onTap: _onReportPressed,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        margin: const EdgeInsets.only(right: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.redAccent,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.report_problem,
+                                          size: 18,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  GestureDetector(
+                                    onTap: () => setState(
+                                        () => _isSheetExpanded = false),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[800],
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 20,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-
-                    const Text(
-                      "Nearby Transit",
-                      style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black),
+                        Text(
+                          "${nearbyVehicles.length} locations nearby",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Content
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            children: [
+                              // Route Details Card (Black Theme)
+                              if (_selectedRoute != null &&
+                                  _selectedVehicleId != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[900],
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: Colors.cyanAccent
+                                                  .withOpacity(0.2),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.alt_route,
+                                              color: Colors.cyanAccent,
+                                              size: 16,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              _vehicles
+                                                  .firstWhere((v) =>
+                                                      v.id ==
+                                                      _selectedVehicleId)
+                                                  .routeName,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      ..._getNextStops(
+                                        _vehicles.firstWhere(
+                                            (v) => v.id == _selectedVehicleId),
+                                        _selectedRoute!,
+                                      ).take(4).map((s) {
+                                        final arrivalTime = DateTime.now().add(
+                                            Duration(
+                                                minutes: s.arrivalTimeOffset));
+                                        final timeStr = s.arrivalTimeOffset == 0
+                                            ? "Now"
+                                            : "${arrivalTime.hour}:${arrivalTime.minute.toString().padLeft(2, '0')}";
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 3),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 6,
+                                                height: 6,
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.cyanAccent,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  s.name,
+                                                  style: const TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 12),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      s.arrivalTimeOffset == 0
+                                                          ? Colors.green
+                                                          : Colors.grey[800],
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  timeStr,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }),
+                                    ],
+                                  ),
+                                ),
+                                // Add "Nearby Transit" label after route card
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 8, bottom: 8),
+                                  child: Text(
+                                    "Nearby Transit",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              // Transit List Items (Purple Cards)
+                              ...nearbyVehicles.take(6).map((v) {
+                                IconData icon;
+                                Color iconBgColor;
+                                switch (v.type) {
+                                  case TransitType.bus:
+                                    icon = Icons.directions_bus;
+                                    iconBgColor = const Color(0xFFE8F5E9);
+                                    break;
+                                  case TransitType.metro:
+                                    icon = Icons.subway;
+                                    iconBgColor = const Color(0xFFE3F2FD);
+                                    break;
+                                  case TransitType.train:
+                                    icon = Icons.train;
+                                    iconBgColor = const Color(0xFFFFF3E0);
+                                    break;
+                                  case TransitType.tram:
+                                    icon = Icons.tram;
+                                    iconBgColor = const Color(0xFFF3E5F5);
+                                    break;
+                                }
+                                return GestureDetector(
+                                  onTap: () => _selectVehicle(v),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: v.id == _selectedVehicleId
+                                          ? Border.all(
+                                              color: const Color(0xFF9C27B0),
+                                              width: 2)
+                                          : null,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: iconBgColor,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(icon,
+                                              size: 20,
+                                              color: const Color(0xFF6A1B9A)),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                v.name,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  color: Colors.black87,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              Text(
+                                                v.routeName,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // Status Badge
+                                        if (v.status == VehicleStatus.delayed)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFFE0B2),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Text(
+                                              "CAUTION",
+                                              style: TextStyle(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFFE65100),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-
-                    if (nearbyVehicles.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Text("No vehicles nearby...",
-                            style: TextStyle(color: Colors.grey)),
-                      ),
-
-                    ...nearbyVehicles.map((v) => _buildTransitListItem(v)),
-                  ],
+                  ),
                 ),
               );
             },
@@ -434,11 +1136,10 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
     );
   }
 
+  // Helpers
   Marker _buildMarker(TransitVehicle v) {
     final isSelected = v.id == _selectedVehicleId;
-    // Scale up if selected
     final size = isSelected ? 55.0 : 40.0;
-
     return Marker(
       key: Key(v.id),
       width: size,
@@ -455,77 +1156,73 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
     switch (v.type) {
       case TransitType.bus:
         return Container(
-          decoration: BoxDecoration(
-            color:
-                v.status == VehicleStatus.delayed ? Colors.red : Colors.green,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
-          ),
-          child: Center(
-            child: Icon(Icons.directions_bus,
-                color: Colors.white, size: size * 0.6),
-          ),
-        );
-
-      case TransitType.metro:
-        // Diamond shape
-        return Transform.rotate(
-          angle: 0.785398, // 45 degrees
-          child: Container(
-            width: size * 0.7,
-            height: size * 0.7,
             decoration: BoxDecoration(
-              color: v.color ?? Colors.blue,
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Colors.white, width: 2),
-              boxShadow: const [
-                BoxShadow(color: Colors.black26, blurRadius: 4)
-              ],
+                color: v.status == VehicleStatus.delayed
+                    ? Colors.red
+                    : Colors.green, // Bus is Green
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black26, blurRadius: 4)
+                ]),
+            child: Center(
+                child: Icon(Icons.directions_bus,
+                    color: Colors.white, size: size * 0.6)));
+      case TransitType.metro:
+        // Metro: Diamond shape
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Transform.rotate(
+              angle: 0.785398, // 45 degrees
+              child: Container(
+                width: size * 0.7,
+                height: size * 0.7,
+                decoration: BoxDecoration(
+                  color: v.color ?? Colors.purple, // Default Metro Purple
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 4)
+                  ],
+                ),
+              ),
             ),
-            child: Transform.rotate(
-              angle: -0.785398, // Counter rotate icon
-              child: Icon(Icons.subway, color: Colors.white, size: size * 0.5),
-            ),
-          ),
+            Icon(Icons.subway, color: Colors.white, size: size * 0.5),
+          ],
         );
-
       case TransitType.train:
-        // Rectangular
+        // Train: Rectangular (Landscape)
         return Container(
-          width: size,
-          height: size * 0.6,
-          decoration: BoxDecoration(
-            color: v.color ?? Colors.blue[800],
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
-          ),
-          child: Center(
-              child: Icon(Icons.train, color: Colors.white, size: size * 0.5)),
-        );
-
+            width: size * 1.2, // Wider
+            height: size * 0.8,
+            decoration: BoxDecoration(
+                color: v.color ?? Colors.indigo, // Train Indigo
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black26, blurRadius: 4)
+                ]),
+            child: Center(
+                child:
+                    Icon(Icons.train, color: Colors.white, size: size * 0.6)));
       case TransitType.tram:
         return Container(
-          decoration: BoxDecoration(
-            color: Colors.purple,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-          ),
-          child: Center(
-            child: Icon(Icons.tram, color: Colors.white, size: size * 0.6),
-          ),
-        );
+            decoration: BoxDecoration(
+                color: Colors.teal, // Tram Teal
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: Colors.white, width: 2, style: BorderStyle.solid),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black26, blurRadius: 4)
+                ]),
+            child: Center(
+                child:
+                    Icon(Icons.tram, color: Colors.white, size: size * 0.6)));
     }
   }
 
   Widget _buildTransitListItem(TransitVehicle v) {
-    if (!_isSheetExpanded &&
-        _sheetController.isAttached &&
-        _sheetController.size < 0.15) {
-      return const SizedBox.shrink();
-    }
-
     IconData icon;
     Color color;
     switch (v.type) {
@@ -546,57 +1243,100 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
         color = Colors.purple;
         break;
     }
-
     if (v.status == VehicleStatus.delayed) color = Colors.red;
-
     final isSelected = v.id == _selectedVehicleId;
-
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      color: isSelected
-          ? Colors.blue.withOpacity(0.05)
-          : Colors.grey[50], // Highlight if selected
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: isSelected ? BorderSide(color: Colors.blue) : BorderSide.none),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.1),
-          child: Icon(icon, color: color),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 4))
+        ],
+        border: isSelected
+            ? Border.all(color: Colors.blueAccent, width: 2)
+            : Border.all(color: Colors.grey.shade200),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            _selectVehicle(v);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // Icon
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                const SizedBox(width: 16),
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${v.agency} ${v.name}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.black87)),
+                      const SizedBox(height: 4),
+                      Text(v.routeName,
+                          style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                ),
+                // Status
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: v.status == VehicleStatus.onTime
+                        ? Colors.green.withOpacity(0.1)
+                        : Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: v.status == VehicleStatus.onTime
+                            ? Colors.green
+                            : Colors.red),
+                  ),
+                  child: Text(
+                    v.status.name == 'onTime' ? 'On Time' : 'Delayed',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: v.status == VehicleStatus.onTime
+                            ? Colors.green[700]
+                            : Colors.red[700]),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        title: Text('${v.agency} ${v.name}',
-            style: const TextStyle(
-                fontWeight: FontWeight.w600, color: Colors.black)),
-        subtitle:
-            Text(v.routeName, style: const TextStyle(color: Colors.black54)),
-        trailing: Text(v.status.name,
-            style: TextStyle(
-                color: v.status == VehicleStatus.onTime
-                    ? Colors.green
-                    : Colors.red,
-                fontWeight: FontWeight.bold)),
-        onTap: () {
-          _selectVehicle(v);
-          // Open sheet slightly if minimized to show details
-          if (_sheetController.size < 0.2) {
-            _sheetController.animateTo(0.5,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut);
-          }
-        },
       ),
     );
   }
 
   List<TransitStop> _getNextStops(TransitVehicle v, TransitRoute route) {
     if (route.stops.isEmpty) return [];
-
-    // Simple proximity logic: Find closest stop
     int nearestIndex = -1;
     double minDistance = double.infinity;
     final distance = const Distance();
-
     for (int i = 0; i < route.stops.length; i++) {
       final d =
           distance.as(LengthUnit.Meter, v.position, route.stops[i].position);
@@ -605,27 +1345,172 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen> {
         nearestIndex = i;
       }
     }
-
     if (nearestIndex == -1) return [];
-
     List<TransitStop> nextStops = [];
-
-    // Direct logic based on pathDirection
     if (v.pathDirection == 1) {
-      // Forward: Next stops are nearest + 1, nearest + 2
-      // If we are essentially AT the nearest stop (very close), we should show it?
-      // Or if we passed it? For simplicity, let's assume nearest is "current/just reached"
-      // So next is nearest + 1.
       if (nearestIndex + 1 < route.stops.length)
         nextStops.add(route.stops[nearestIndex + 1]);
       if (nearestIndex + 2 < route.stops.length)
         nextStops.add(route.stops[nearestIndex + 2]);
     } else {
-      // Backward: Next stops are nearest - 1, nearest - 2
       if (nearestIndex - 1 >= 0) nextStops.add(route.stops[nearestIndex - 1]);
       if (nearestIndex - 2 >= 0) nextStops.add(route.stops[nearestIndex - 2]);
     }
-
     return nextStops;
+  }
+
+  Widget _buildExpandedSearchPanel() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(left: 16),
+              child: Text("Find Routes",
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18)),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => setState(() => _isSearchExpanded = false),
+            )
+          ],
+        ),
+        const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: [
+              _buildRouteSearchField(
+                label: "From",
+                value: _fromPlace,
+                onChanged: (val) {
+                  setState(() {
+                    _fromPlace = val;
+                    // Auto-suggest logic if needed
+                  });
+                },
+                suggestions: _suggestedCities,
+              ),
+              const SizedBox(height: 10),
+              _buildRouteSearchField(
+                label: "To",
+                value: _toPlace,
+                onChanged: (val) => setState(() => _toPlace = val),
+                // Basic suggestions for 'To' based on 'From' or just all cities
+                suggestions: _fromPlace.isNotEmpty
+                    ? _getToSuggestions(_fromPlace)
+                    : _suggestedCities,
+                enabled: _fromPlace.isNotEmpty,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: BouncingButton(
+                      onTap: () {
+                        // Logic to confirm search
+                        setState(() {
+                          _searchQuery = "$_fromPlace to $_toPlace";
+                          _isSearchExpanded = false;
+                        });
+                        // Move map or filter
+                      },
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.blueAccent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text("Find Route",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: BouncingButton(
+                      onTap: () =>
+                          _showAllRoutesDialog(context, _fromPlace, _toPlace),
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[800],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text("Show All",
+                            style: TextStyle(color: Colors.white)),
+                      ),
+                    ),
+                  )
+                ],
+              )
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(TransitType? type) {
+    final isSelected = _selectedTransitType == type;
+    final color = type == null
+        ? Colors.grey
+        : type == TransitType.train
+            ? Colors.red
+            : type == TransitType.bus
+                ? Colors.orange
+                : Colors.blue;
+
+    return BouncingButton(
+      onTap: () {
+        setState(() {
+          _selectedTransitType = isSelected ? null : type;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? color : Colors.grey[900],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: isSelected ? Colors.white : Colors.white24, width: 1.5),
+          boxShadow: isSelected
+              ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 8)]
+              : [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (type != null)
+              Icon(
+                  type == TransitType.train
+                      ? Icons.train
+                      : type == TransitType.bus
+                          ? Icons.directions_bus
+                          : Icons.subway,
+                  color: isSelected ? Colors.white : color,
+                  size: 18),
+            if (type != null) const SizedBox(width: 8),
+            Text(
+              type == null ? "All" : type.name.toUpperCase(),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

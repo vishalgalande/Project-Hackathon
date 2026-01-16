@@ -13,6 +13,7 @@ import 'pages/intel_page.dart';
 import 'pages/admin_page.dart';
 import 'features/transit_tracker_screen.dart';
 import 'core/shader_manager.dart';
+import 'features/cinematic_intro_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -86,6 +87,11 @@ final GoRouter _router = GoRouter(
         final zoneId = state.pathParameters['zoneId'] ?? '';
         return IntelPage(zoneId: zoneId);
       },
+    ),
+    GoRoute(
+      path: '/intro',
+      name: 'intro',
+      builder: (context, state) => const CinematicIntroScreen(),
     ),
     GoRoute(
       path: '/tracker',
