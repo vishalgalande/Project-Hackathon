@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:latlong2/latlong.dart';
@@ -744,6 +745,40 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen>
                   ],
                 ),
               ],
+            ),
+          ),
+
+          // Top-Right: Home Button
+          Positioned(
+            top: 20,
+            right: 20,
+            child: SlideFadeEntry(
+              delay: const Duration(milliseconds: 600),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BackdropFilter(
+                  filter: dart_ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    height: 50,
+                    width: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => context.go('/'),
+                        borderRadius: BorderRadius.circular(25),
+                        child: const Center(
+                          child: Icon(Icons.arrow_back, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
 
