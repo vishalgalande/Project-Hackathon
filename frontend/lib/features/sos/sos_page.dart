@@ -170,30 +170,56 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
               
               const SizedBox(height: 48),
 
-              // Quick Actions
-              Row(
-                children: [
-                  Expanded(
-                    child: _EmergencyButton(
-                      icon: Icons.phone_in_talk,
-                      label: "Call Help\n(9172504362)",
-                      color: Colors.green,
-                      onTap: () => _sosService.callEmergency(),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _EmergencyButton(
-                      icon: Icons.local_police,
-                      label: "Police\n(100)",
-                      color: Colors.blue,
-                      onTap: () async {
-                        final Uri url = Uri.parse("tel:100");
-                        if (await canLaunchUrl(url)) await launchUrl(url);
-                      },
-                    ),
-                  ),
-                ],
+              // National Emergency Numbers
+              Text('National Emergency Numbers', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+              const SizedBox(height: 16),
+              _buildEmergencyCard(
+                'Police', 
+                'For immediate police assistance', 
+                '100', 
+                Colors.blue, 
+                Icons.local_police
+              ),
+              _buildEmergencyCard(
+                'Ambulance', 
+                'Medical emergency services', 
+                '102', 
+                Colors.red, 
+                Icons.medical_services
+              ),
+              _buildEmergencyCard(
+                'Fire Department', 
+                'Fire emergency services', 
+                '101', 
+                Colors.orange, 
+                Icons.fire_truck
+              ),
+              _buildEmergencyCard(
+                'Women Helpline', 
+                '24x7 women safety helpline', 
+                '1091', 
+                Colors.purple, 
+                Icons.woman
+              ),
+
+              const SizedBox(height: 32),
+              
+              // Tourist Services
+              Text('Tourist Services', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+              const SizedBox(height: 16),
+              _buildEmergencyCard(
+                'Tourist Helpline', 
+                'Ministry of Tourism helpline', 
+                '1363', 
+                Colors.indigo, 
+                Icons.travel_explore
+              ),
+              _buildEmergencyCard(
+                'National Emergency', 
+                'Single emergency number for all services', 
+                '112', 
+                Colors.green, 
+                Icons.shield
               ),
 
               const SizedBox(height: 32),
@@ -284,44 +310,63 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
       ),
     );
   }
-}
 
-class _EmergencyButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _EmergencyButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.5)),
-        ),
-        child: Column(
+  Widget _buildEmergencyCard(String title, String subtitle, String number, Color color, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF222222),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
           children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
               ),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(number, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: color, fontSize: 18)),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () => launchUrl(Uri.parse('tel:$number')),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: color.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.call, size: 12, color: color),
+                        const SizedBox(width: 4),
+                        Text('Call', style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
