@@ -43,6 +43,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
   LatLng? _userLocation; // User's detected location
   bool _locationLoading = true; // Loading state for geolocation
   bool _isPanelExpanded = false; // Track if bottom panel is expanded
+  bool _showLoadingOverlay = true; // Show loading overlay on entry
 
   /// Detect the state/region based on map center coordinates
   String _detectState(double lat, double lng) {
@@ -150,6 +151,11 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
     }
 
     _initUserLocation();
+
+    // Hide loading overlay after 1.5 seconds
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) setState(() => _showLoadingOverlay = false);
+    });
   }
 
   /// Play the globe spinning transition
@@ -373,12 +379,14 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
                 ),
                 children: [
                   TileLayer(
-                    // Switch between Standard and Dark Matter
+                    // CartoDB tiles (CORS-friendly, works on localhost)
+                    // Voyager for light mode, Dark Matter for dark mode
                     urlTemplate: _isDarkMode
                         ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
                     userAgentPackageName: 'com.example.safezone',
-                    subdomains: const ['a', 'b', 'c'],
+                    subdomains: const ['a', 'b', 'c', 'd'],
+                    retinaMode: RetinaMode.isHighDensity(context),
                     tileProvider: CancellableNetworkTileProvider(),
                   ),
                   // Show individual zones when zoomed in, clusters when zoomed out
@@ -735,6 +743,19 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
                     )
                   : const SizedBox.shrink(),
             ),
+
+            // LOADING OVERLAY (Hides map loading for 500ms)
+            if (_showLoadingOverlay)
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _showLoadingOverlay ? 1.0 : 0.0,
+                child: Container(
+                  color: const Color(0xFF0a0a0a),
+                  child: Center(
+                    child: _ScrollingLoadingText(),
+                  ),
+                ),
+              ),
           ],
         ),
       ), // Close Scaffold
@@ -1586,5 +1607,67 @@ class _ZoneDetailsSidebar extends StatelessWidget {
             }
           }
         });
+  }
+}
+
+/// Scrolling ASCII loading animation for entry overlay
+class _ScrollingLoadingText extends StatefulWidget {
+  @override
+  State<_ScrollingLoadingText> createState() => _ScrollingLoadingTextState();
+}
+
+class _ScrollingLoadingTextState extends State<_ScrollingLoadingText>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final String _pattern = '===+=--+===+=--+===+=--+';
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Scrolling pattern
+        AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final offset = (_controller.value * _pattern.length).toInt();
+            final displayText =
+                _pattern.substring(offset) + _pattern.substring(0, offset);
+            return Text(
+              displayText,
+              style: GoogleFonts.spaceMono(
+                fontSize: 24,
+                color: const Color(0xFF00F0FF),
+                letterSpacing: 2,
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'INITIALIZING ZONES',
+          style: GoogleFonts.spaceMono(
+            fontSize: 12,
+            color: Colors.white24,
+            letterSpacing: 4,
+          ),
+        ),
+      ],
+    );
   }
 }

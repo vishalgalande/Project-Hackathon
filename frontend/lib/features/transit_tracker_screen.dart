@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,6 +10,7 @@ import '../services/mock_transit_service.dart';
 import '../services/transit_api_service.dart';
 import 'animations.dart';
 import 'dart:ui' as dart_ui;
+import 'package:google_fonts/google_fonts.dart';
 
 class TransitTrackerScreen extends StatefulWidget {
   const TransitTrackerScreen({super.key});
@@ -48,6 +50,7 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen>
   String _toPlace = "";
   TransitType? _selectedTransitType;
   bool _isSearchExpanded = false;
+  bool _showLoadingOverlay = true; // Show loading overlay on entry
 
   List<String> _suggestedCities = const [
     "New Delhi",
@@ -79,6 +82,11 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen>
           _vehicles = vehicles;
         });
       }
+    });
+
+    // Hide loading overlay after 1.5 seconds
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) setState(() => _showLoadingOverlay = false);
     });
 
     _listenToReports();
@@ -137,6 +145,10 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen>
     if (_selectedTransitType != null) {
       result = result.where((v) => v.type == _selectedTransitType).toList();
     }
+
+    // 3. Deduplicate by ID to prevent duplicate key errors in markers
+    final seenIds = <String>{};
+    result = result.where((v) => seenIds.add(v.id)).toList();
 
     return result;
   }
@@ -612,9 +624,12 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen>
                       const InteractionOptions(flags: InteractiveFlag.all)),
               children: [
                 TileLayer(
+                  // CartoDB Voyager (clean street map, CORS-friendly)
                   urlTemplate:
-                      'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-                  subdomains: const ['mt0', 'mt1', 'mt2', 'mt3'],
+                      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                  subdomains: const ['a', 'b', 'c', 'd'],
+                  retinaMode: RetinaMode.isHighDensity(context),
+                  tileProvider: CancellableNetworkTileProvider(),
                 ),
                 if (_selectedRoute != null)
                   PolylineLayer(
@@ -1131,6 +1146,19 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen>
               );
             },
           ),
+
+          // LOADING OVERLAY (Hides map loading for 1.5s)
+          if (_showLoadingOverlay)
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: _showLoadingOverlay ? 1.0 : 0.0,
+              child: Container(
+                color: const Color(0xFF0a0a0a),
+                child: Center(
+                  child: _ScrollingLoadingText(),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -1511,6 +1539,68 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen>
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Scrolling ASCII loading animation for entry overlay
+class _ScrollingLoadingText extends StatefulWidget {
+  @override
+  State<_ScrollingLoadingText> createState() => _ScrollingLoadingTextState();
+}
+
+class _ScrollingLoadingTextState extends State<_ScrollingLoadingText>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final String _pattern = '===+=--+===+=--+===+=--+';
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Scrolling pattern
+        AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final offset = (_controller.value * _pattern.length).toInt();
+            final displayText =
+                _pattern.substring(offset) + _pattern.substring(0, offset);
+            return Text(
+              displayText,
+              style: GoogleFonts.spaceMono(
+                fontSize: 24,
+                color: const Color(0xFF00F0FF),
+                letterSpacing: 2,
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'INITIALIZING TRANSIT',
+          style: GoogleFonts.spaceMono(
+            fontSize: 12,
+            color: Colors.white24,
+            letterSpacing: 4,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'auth/auth_dialogs.dart';
 import 'chatbot/chat_button.dart';
@@ -14,15 +15,16 @@ import '../widgets/nebula_background.dart';
 import '../widgets/tilt_card.dart'; // UPDATED from GlassCard
 import '../widgets/liquid_button.dart';
 import '../widgets/glitch_text.dart'; // NEW
+import '../app/providers.dart'; // For preloading
 
-class LandingPage extends StatefulWidget {
+class LandingPage extends ConsumerStatefulWidget {
   const LandingPage({super.key});
 
   @override
-  State<LandingPage> createState() => _LandingPageState();
+  ConsumerState<LandingPage> createState() => _LandingPageState();
 }
 
-class _LandingPageState extends State<LandingPage> {
+class _LandingPageState extends ConsumerState<LandingPage> {
   User? _user;
 
   @override
@@ -32,6 +34,21 @@ class _LandingPageState extends State<LandingPage> {
       if (mounted) setState(() => _user = user);
     });
     _user = FirebaseAuth.instance.currentUser;
+  }
+
+  /// Preload data for Geofencing page during warp animation
+  void _preloadGeofencingData() {
+    // Using .future forces the StreamProvider to start fetching
+    // The data will be cached in Riverpod and available when CommandCenterPage opens
+    ref.read(firebaseZonesProvider.future).then((_) {
+      debugPrint('✅ Zones preloaded');
+    }).catchError((_) {});
+
+    // UserLocationProvider is a StateNotifier, just reading triggers its init
+    ref.read(userLocationProvider);
+
+    // Also trigger local zones fallback
+    ref.read(zonesProvider);
   }
 
   @override
@@ -171,6 +188,9 @@ class _LandingPageState extends State<LandingPage> {
                 text: 'EXPLORE MAP',
                 icon: Icons.map,
                 onTap: () {
+                  // Preload zone data while animation plays (using .future forces fetch)
+                  _preloadGeofencingData();
+
                   Navigator.of(context).push(PageRouteBuilder(
                     pageBuilder: (context, _, __) => WarpTransition(
                       onFinished: () {
@@ -186,7 +206,18 @@ class _LandingPageState extends State<LandingPage> {
               MouseRegion(
                 cursor: SystemMouseCursors.click,
                 child: GestureDetector(
-                  onTap: () => context.go('/tracker'),
+                  onTap: () {
+                    // Preload transit data while animation plays
+                    // (Transit page uses its own local state, but we can still trigger the animation)
+                    Navigator.of(context).push(PageRouteBuilder(
+                      pageBuilder: (context, _, __) => WarpTransition(
+                        onFinished: () {
+                          context.go('/tracker');
+                        },
+                      ),
+                      opaque: false,
+                    ));
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 32, vertical: 16),
