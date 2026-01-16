@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:math' as math; // For Point and max
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:latlong2/latlong.dart';
@@ -23,7 +24,7 @@ class CommandCenterPage extends ConsumerStatefulWidget {
 }
 
 class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final MapController _mapController = MapController();
   late FocusNode _focusNode; // For keyboard events
   // Center of India (approximately)
@@ -159,11 +160,13 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
     // Step 1: "Spin" - Fast pan from Atlantic to India
     if (!mounted) return;
 
-    // Animate to India with zoom in
-    _animateMapTo(_jaipurCenter, _targetZoom);
+    // Animate to India with zoom in (3 seconds for intro)
+    _animateMapTo(_jaipurCenter, _targetZoom,
+        duration: const Duration(seconds: 3));
   }
 
-  void _animateMapTo(LatLng destLocation, double destZoom) {
+  void _animateMapTo(LatLng destLocation, double destZoom,
+      {Duration duration = const Duration(milliseconds: 1000)}) {
     // Simple custom animation implementation
     final latTween = Tween<double>(
         begin: _mapController.camera.center.latitude,
@@ -174,10 +177,10 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
     final zoomTween =
         Tween<double>(begin: _mapController.camera.zoom, end: destZoom);
 
-    final controller =
-        AnimationController(duration: const Duration(seconds: 3), vsync: this);
+    final controller = AnimationController(duration: duration, vsync: this);
+    // Use easeOutQuart for smoother "landing"
     final animation =
-        CurvedAnimation(parent: controller, curve: Curves.easeInOutCubic);
+        CurvedAnimation(parent: controller, curve: Curves.easeOutQuart);
 
     controller.addListener(() {
       if (!mounted) return;
@@ -426,8 +429,8 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
                       Marker(
                         point: LatLng(
                             userLocation.latitude, userLocation.longitude),
-                        width: 40,
-                        height: 40,
+                        width: 24,
+                        height: 24,
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.blueAccent,
@@ -441,8 +444,6 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
                               ),
                             ],
                           ),
-                          child: const Icon(Icons.navigation,
-                              color: Colors.white, size: 20),
                         ),
                       ),
                     ],
@@ -921,27 +922,34 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
   void _centerMapWithOffset(LatLng target, double offsetX) {
     if (!_mapReady) return;
 
-    final zoom =
+    // Determine target zoom (at least 14.0 for sufficient detail)
+    final double targetZoom =
         _mapController.camera.zoom < 14.0 ? 14.0 : _mapController.camera.zoom;
+
     // We want the Target to be at (ScreenCenter.x - offsetX, ScreenCenter.y)
-    // This implies the CameraCenter should be at Target + (Offset in World Coords)
+    // Means CameraCenter should be (Target + offsetX)
 
-    // Simplest way with flutter_map:
-    // 1. Project target to Point
-    // 2. Add offset to Point (shifting the "camera view")
-    //    If we want content to move LEFT, we move Camera RIGHT (add positive X to center)
-    // 3. Unproject back to LatLng
-
+    // 1. Project target LatLng to Global Pixel Coordinates at TARGET ZOOM
+    // 1. Project target LatLng to Global Pixel Coordinates at TARGET ZOOM
     final camera = _mapController.camera;
-    final targetPoint = camera.project(target);
-    // We want targetPoint to be at (ScreenWidth/2 - offsetX)
-    // Current MapCenter is at (ScreenWidth/2)
-    // So MapCenter needs to be at targetPoint + offsetX
+    // Note: camera.project uses CURRENT zoom by default. We must use Crst to project at specific zoom.
+    final rawPoint = camera.crs.latLngToPoint(target, targetZoom);
+    // Explicitly convert to Point<double> as required by flutter_map interactions
+    final math.Point<double> targetPoint =
+        math.Point<double>(rawPoint.x.toDouble(), rawPoint.y.toDouble());
 
-    final newCenterPoint = targetPoint + CustomPoint(offsetX, 0);
-    final newCenter = camera.unproject(newCenterPoint);
+    // 2. Add offset (positive X shifts camera right, which moves content left)
+    // CustomPoint is essentially math.Point, ensure doubles are used
+    final newCenterPoint =
+        math.Point<double>(targetPoint.x + offsetX, targetPoint.y);
 
-    _mapController.move(newCenter, zoom);
+    // 3. Unproject back to LatLng at TARGET ZOOM
+    // pointToLatLng expects CustomPoint or math.Point but ensures double internally
+    final newCenter = camera.crs.pointToLatLng(newCenterPoint, targetZoom);
+
+    // 4. Smoothly animate to the new center
+    _animateMapTo(newCenter, targetZoom,
+        duration: const Duration(milliseconds: 800));
   }
 
   Widget _buildZonesOverlay(List<Zone> zones) {
@@ -1286,7 +1294,8 @@ class _ZoneDetailsSidebar extends StatelessWidget {
                 children: [
                   IconButton(
                     onPressed: onClose,
-                    icon: const Icon(Icons.arrow_forward), // "Back" to map
+                    icon: const Icon(Icons.close,
+                        color: Colors.black), // "Close" icon, Black color
                     tooltip: 'Close Details',
                   ),
                   const SizedBox(width: 8),
@@ -1499,36 +1508,43 @@ class _ZoneDetailsSidebar extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Report Safety Issue (Sidebar)',
-              style: GoogleFonts.poppins(
-                  fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Your reports help mark this zone as DANGER (>10 reports).',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 24),
-            // Options
-            _buildReportOption(
-                context, ref, zone, 'Theft / Pickpocketing', 'theft'),
-            _buildReportOption(context, ref, zone, 'Harassment', 'harassment'),
-            _buildReportOption(context, ref, zone, 'Poor Lighting', 'lighting'),
-            _buildReportOption(
-                context, ref, zone, 'Suspicious Activity', 'suspicious'),
-            const SizedBox(height: 24),
-          ],
+      builder: (context) => Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Report Safety Issue (Sidebar)',
+                style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Your reports help mark this zone as DANGER (>10 reports).',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 24),
+              // Options
+              _buildReportOption(
+                  context, ref, zone, 'Theft / Pickpocketing', 'theft'),
+              _buildReportOption(
+                  context, ref, zone, 'Harassment', 'harassment'),
+              _buildReportOption(
+                  context, ref, zone, 'Poor Lighting', 'lighting'),
+              _buildReportOption(
+                  context, ref, zone, 'Suspicious Activity', 'suspicious'),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -1537,9 +1553,10 @@ class _ZoneDetailsSidebar extends StatelessWidget {
   Widget _buildReportOption(BuildContext context, WidgetRef ref, Zone zone,
       String label, String type) {
     return ListTile(
-        leading: const Icon(Icons.report_problem_outlined),
-        title: Text(label),
-        trailing: const Icon(Icons.chevron_right),
+        leading:
+            const Icon(Icons.report_problem_outlined, color: Colors.black87),
+        title: Text(label, style: const TextStyle(color: Colors.black)),
+        trailing: const Icon(Icons.chevron_right, color: Colors.black54),
         onTap: () async {
           final newCount = zone.negativeFeedbackCount + 1;
           try {
