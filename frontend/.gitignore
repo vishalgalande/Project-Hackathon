@@ -46,3 +46,6 @@ app.*.map.json
 .env
 *.env
 .env.*
+
+# Vercel Build Script Artifacts
+flutter/
