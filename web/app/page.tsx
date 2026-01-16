@@ -1,214 +1,240 @@
 "use client";
 
+import { Suspense, useRef } from "react";
 import dynamic from "next/dynamic";
-import { motion } from "framer-motion";
-import { ChevronDown, MapPin, Zap, Lock, Globe } from "lucide-react";
-import GlitchButton from "@/components/Hero/GlitchButton";
-import MagneticWrapper from "@/components/Hero/MagneticWrapper";
+import { useRouter } from "next/navigation";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { Canvas } from "@react-three/fiber";
+import { Map as MapIcon, Bus, ThumbsUp, AlertTriangle, ArrowRight, Activity, ChevronDown } from "lucide-react";
+
+// Components
+import SpotlightCard from "@/components/UI/SpotlightCard";
+import LiquidButton from "@/components/UI/LiquidButton";
 import LiveDataStrip from "@/components/LiveDataStrip";
-import BentoGrid from "@/components/BentoGrid/BentoGrid";
+import StaggeredText from "@/components/UI/StaggeredText";
+import SuccessStats from "@/components/SuccessStats";
 import GuardianToggle from "@/components/GuardianMode/GuardianToggle";
 
-// Dynamic import for 3D component to avoid SSR issues
-const WireframeGlobe = dynamic(
-  () => import("@/components/Hero/WireframeGlobe"),
-  { ssr: false }
-);
+// Lazy Load Heavy 3D Background
+const FluidParticles = dynamic(() => import("@/components/Hero/FluidParticles"), {
+    ssr: false,
+    loading: () => <div className="absolute inset-0 bg-black" />,
+});
 
 export default function Home() {
-  return (
-    <main className="min-h-screen bg-void-black relative overflow-hidden">
-      {/* Grid background overlay */}
-      <div className="fixed inset-0 grid-bg pointer-events-none opacity-50" />
+    const router = useRouter();
+    const containerRef = useRef<HTMLElement>(null);
+    const { scrollYProgress } = useScroll({ target: containerRef });
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-4">
-        {/* 3D Globe */}
-        <WireframeGlobe />
+    const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]); // Parallax for Hero
 
-        {/* Hero Content */}
-        <div className="relative z-10 text-center max-w-6xl mx-auto">
-          {/* Tag line */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="flex items-center justify-center gap-2 mb-6"
-          >
-            <span className="w-8 h-[1px] bg-cyber-cyan" />
-            <span className="text-mono text-cyber-cyan text-xs tracking-[0.3em] uppercase">
-              Smart Tourist Safety System
-            </span>
-            <span className="w-8 h-[1px] bg-cyber-cyan" />
-          </motion.div>
+    return (
+        <main ref={containerRef} className="min-h-screen bg-[#050505] text-white selection:bg-purple-500 selection:text-white overflow-x-hidden">
 
-          {/* Main headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="heading-hero text-white mb-4"
-          >
-            <span className="block">Invisible</span>
-            <span className="block text-cyber-cyan text-glow-cyan">Shield.</span>
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="text-white/60 text-lg md:text-xl max-w-2xl mx-auto mb-10"
-          >
-            AI-powered protection that travels with you. Real-time threat detection,
-            dynamic geofencing, and blockchain-secured incident logs.
-          </motion.p>
-
-          {/* CTA Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-          >
-            <MagneticWrapper strength={0.2}>
-              <GlitchButton onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}>
-                Initialize Tracking
-              </GlitchButton>
-            </MagneticWrapper>
-          </motion.div>
-
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.5 }}
-            className="absolute bottom-10 left-1/2 -translate-x-1/2"
-          >
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="text-white/30"
-            >
-              <ChevronDown className="w-6 h-6" />
-            </motion.div>
-          </motion.div>
-        </div>
-
-        {/* Corner decorations */}
-        <div className="absolute top-8 left-8 w-16 h-16 border-t border-l border-cyber-cyan/30" />
-        <div className="absolute top-8 right-8 w-16 h-16 border-t border-r border-cyber-cyan/30" />
-        <div className="absolute bottom-8 left-8 w-16 h-16 border-b border-l border-cyber-cyan/30" />
-        <div className="absolute bottom-8 right-8 w-16 h-16 border-b border-r border-cyber-cyan/30" />
-
-        {/* Status indicators */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 1 }}
-          className="absolute left-8 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-6"
-        >
-          {[
-            { icon: <MapPin className="w-4 h-4" />, label: "GPS", status: "LOCKED" },
-            { icon: <Zap className="w-4 h-4" />, label: "AI", status: "ONLINE" },
-            { icon: <Lock className="w-4 h-4" />, label: "SEC", status: "MAX" },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-3 text-mono text-xs">
-              <div className="text-cyber-cyan">{item.icon}</div>
-              <div>
-                <div className="text-white/40">{item.label}</div>
-                <div className="text-cyber-cyan">{item.status}</div>
-              </div>
+            {/* 1. Immersive 3D Background */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <Canvas camera={{ position: [0, 0, 15], fov: 45 }} dpr={[1, 1.5]} performance={{ min: 0.5 }}>
+                    <Suspense fallback={null}>
+                        <FluidParticles />
+                    </Suspense>
+                    <ambientLight intensity={0.5} />
+                </Canvas>
+                {/* Vignette Overlay */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#050505_90%)]" />
             </div>
-          ))}
-        </motion.div>
 
-        {/* Coordinates display */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 1 }}
-          className="absolute right-8 top-1/2 -translate-y-1/2 hidden lg:block text-mono text-xs text-right"
-        >
-          <div className="text-white/40 mb-1">COORDINATES</div>
-          <div className="text-cyber-cyan">26.9124° N</div>
-          <div className="text-cyber-cyan">75.7873° E</div>
-          <div className="text-white/20 mt-2 text-[10px]">JAIPUR, INDIA</div>
-        </motion.div>
-      </section>
+            {/* 2. Hero Section (Parallax) */}
+            <motion.section style={{ y }} className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 text-center">
 
-      {/* Live Data Strip */}
-      <LiveDataStrip />
+                {/* Dynamic Glowing Aura */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/20 blur-[120px] rounded-full mix-blend-screen animate-pulse-slow" />
 
-      {/* Features Section */}
-      <div id="features">
-        <BentoGrid />
-      </div>
+                {/* Badge */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="mb-8 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-xs font-mono uppercase tracking-widest text-[#00F0FF] shadow-[0_0_20px_rgba(0,240,255,0.2)]"
+                >
+                    System Online • v2.4.0
+                </motion.div>
 
-      {/* Guardian Mode Section */}
-      <GuardianToggle />
-
-      {/* Stats Section */}
-      <section className="py-20 px-4 md:px-8 lg:px-16 border-t border-glass-border">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-          >
-            {[
-              { value: "99.9%", label: "Uptime", suffix: "" },
-              { value: "50", label: "Response Time", suffix: "ms" },
-              { value: "10K", label: "Active Users", suffix: "+" },
-              { value: "24", label: "Protected Zones", suffix: "" },
-            ].map((stat, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="text-center"
-              >
-                <div className="text-4xl md:text-5xl font-bold text-cyber-cyan text-glow-cyan">
-                  {stat.value}
-                  <span className="text-xl">{stat.suffix}</span>
+                {/* Main Title (Staggered Reveal) */}
+                <div className="relative mb-6">
+                    <h1 className="text-6xl md:text-8xl font-black tracking-tight leading-tight">
+                        <div className="overflow-hidden">
+                            <StaggeredText text="Navigate India" className="text-white drop-shadow-2xl" />
+                        </div>
+                        <div className="overflow-hidden mt-2">
+                            <motion.span
+                                initial={{ opacity: 0, y: 100 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.8, duration: 0.8, ease: "circOut" }}
+                                className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#8B5CF6] to-[#00F0FF] pb-4"
+                            >
+                                Safely
+                            </motion.span>
+                        </div>
+                    </h1>
                 </div>
-                <div className="text-mono text-xs text-white/50 uppercase tracking-widest mt-2">
-                  {stat.label}
+
+                {/* Subtitle */}
+                <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.2, duration: 1 }}
+                    className="max-w-2xl text-lg md:text-xl text-white/60 mb-12 leading-relaxed"
+                >
+                    Real-time crowd-sourced safety zones and AI-powered transit tracking.
+                    Explore the world with an invisible shield.
+                </motion.p>
+
+                {/* CTA Buttons */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.4 }}
+                    className="flex flex-col sm:flex-row gap-6"
+                >
+                    <LiquidButton onClick={() => router.push('/geofencing')}>
+                        Explore Safety Zones
+                    </LiquidButton>
+
+                    <button
+                        onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
+                        className="group px-8 py-4 rounded-lg border border-white/10 hover:bg-white/5 transition-all flex items-center gap-2"
+                    >
+                        Learn More <ChevronDown className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
+                    </button>
+                </motion.div>
+            </motion.section>
+
+            {/* 3. Live Status Strip */}
+            <section className="relative z-20 border-y border-white/5 bg-black/50 backdrop-blur-lg">
+                <LiveDataStrip />
+            </section>
+
+            {/* 4. Features Grid (Igloo Style) */}
+            <section id="features" className="relative z-20 py-32 px-6 max-w-7xl mx-auto">
+                <motion.div
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    className="text-center mb-20"
+                >
+                    <h2 className="text-4xl md:text-5xl font-bold mb-6">Premium Utility</h2>
+                    <p className="text-white/50 max-w-xl mx-auto">
+                        Advanced tools engineered for the modern traveler.
+                    </p>
+                </motion.div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Feature 1: Safety Zones */}
+                    <SpotlightCard className="h-[400px]" spotlightColor="rgba(0, 240, 255, 0.2)">
+                        <div className="h-full flex flex-col justify-between">
+                            <div>
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className="p-3 bg-white/5 rounded-lg border border-white/10">
+                                        <MapIcon className="w-8 h-8 text-[#00F0FF]" />
+                                    </div>
+                                    <span className="px-3 py-1 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-mono rounded-full animate-pulse">
+                                        LIVE
+                                    </span>
+                                </div>
+                                <h3 className="text-2xl font-bold mb-3 group-hover:text-[#00F0FF] transition-colors">Safety Zones</h3>
+                                <p className="text-white/60 leading-relaxed">
+                                    View real-time safety ratings for areas across Delhi. Community-powered heatmaps show you where to go and what to avoid.
+                                </p>
+                            </div>
+                            <div className="flex items-center text-sm font-mono text-white/40 group-hover:text-white transition-colors">
+                                OPEN MAP <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                            <button
+                                onClick={() => router.push('/geofencing')}
+                                className="absolute inset-0 z-10 cursor-pointer"
+                                aria-label="Open Safety Map"
+                            />
+                        </div>
+                    </SpotlightCard>
+
+                    {/* Feature 2: Transit Tracker */}
+                    <SpotlightCard className="h-[400px]" spotlightColor="rgba(139, 92, 246, 0.2)">
+                        <div className="h-full flex flex-col justify-between">
+                            <div>
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className="p-3 bg-white/5 rounded-lg border border-white/10">
+                                        <Bus className="w-8 h-8 text-purple-500" />
+                                    </div>
+                                    <span className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-mono rounded-full">
+                                        BETA
+                                    </span>
+                                </div>
+                                <h3 className="text-2xl font-bold mb-3 group-hover:text-purple-400 transition-colors">Transit Tracker</h3>
+                                <p className="text-white/60 leading-relaxed">
+                                    Track public transportation in real-time. Find bus routes, train schedules, and live vehicle positions with AI prediction.
+                                </p>
+                            </div>
+                            <div className="flex items-center text-sm font-mono text-white/40 group-hover:text-white transition-colors">
+                                TRACK NOW <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                            <button className="absolute inset-0 z-10 cursor-pointer" />
+                        </div>
+                    </SpotlightCard>
+
+                    {/* Feature 3: Community Voting */}
+                    <SpotlightCard className="h-[300px]" spotlightColor="rgba(255, 255, 255, 0.1)">
+                        <div className="h-full flex flex-col justify-between">
+                            <div className="p-3 w-fit bg-white/5 rounded-lg border border-white/10 mb-6">
+                                <ThumbsUp className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold mb-2">Community Voting</h3>
+                                <p className="text-sm text-white/50">
+                                    Crowdsourced safety. Upvote safe zones and report incidents to warn others.
+                                </p>
+                            </div>
+                        </div>
+                    </SpotlightCard>
+
+                    {/* Feature 4: SOS */}
+                    <SpotlightCard className="h-[300px]" spotlightColor="rgba(239, 68, 68, 0.3)">
+                        <div className="h-full flex flex-col justify-between">
+                            <div className="flex justify-between items-start">
+                                <div className="p-3 w-fit bg-red-500/10 rounded-lg border border-red-500/20 mb-6">
+                                    <AlertTriangle className="w-6 h-6 text-red-500" />
+                                </div>
+                                <Activity className="w-4 h-4 text-red-500 animate-pulse" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold mb-2 text-red-100">Emergency SOS</h3>
+                                <p className="text-sm text-white/50">
+                                    One-tap emergency beacon. Instantly share your location with authorities and trusted contacts.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => router.push('/sos')}
+                                className="absolute inset-0 z-10 cursor-pointer"
+                            />
+                        </div>
+                    </SpotlightCard>
                 </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+            </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-4 md:px-8 lg:px-16 border-t border-glass-border">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <Globe className="w-6 h-6 text-cyber-cyan" />
-            <span className="text-xl font-bold">
-              Safe<span className="text-cyber-cyan">Zone</span>
-            </span>
-          </div>
+            {/* 5. Guardian Mode */}
+            <section className="relative z-20 py-20 px-6 max-w-7xl mx-auto">
+                <GuardianToggle />
+            </section>
 
-          <div className="text-mono text-xs text-white/40 text-center">
-            © 2026 SafeZone Systems. All rights reserved.
-            <br />
-            <span className="text-cyber-cyan/50">HACKATHON PROJECT</span>
-          </div>
+            {/* 6. Stats Section */}
+            <section className="relative z-20 py-20 border-t border-white/5 bg-black/40 backdrop-blur-sm">
+                <SuccessStats />
+            </section>
 
-          <div className="flex items-center gap-2 text-mono text-xs">
-            <span className="w-2 h-2 bg-cyber-cyan rounded-full animate-pulse" />
-            <span className="text-white/50">SYSTEM ONLINE</span>
-          </div>
-        </div>
-      </footer>
+            {/* Footer */}
+            <footer className="py-10 border-t border-white/5 text-center text-white/20 text-sm font-mono relative z-20">
+                <p>BUILT FOR HACKATHON 2026 • SAFETRAVEL INDIA</p>
+            </footer>
 
-      {/* Scanlines overlay */}
-      <div className="fixed inset-0 pointer-events-none scanlines opacity-30" />
-    </main>
-  );
+        </main>
+    );
 }

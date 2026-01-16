@@ -54,3 +54,6 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+  
+  shaders:
+    - shaders/nebula.frag

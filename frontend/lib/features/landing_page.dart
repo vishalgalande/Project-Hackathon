@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_animate/flutter_animate.dart'; // Animation Power
+
 import 'auth/auth_dialogs.dart';
 import 'chatbot/chat_button.dart';
 import 'sos/sos_page.dart';
 import 'transitions/warp_transition.dart';
+
+// New High-Fidelity Widgets
+import '../widgets/nebula_background.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/liquid_button.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -28,26 +35,26 @@ class _LandingPageState extends State<LandingPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Lando Aesthetic: Deep Void + Nebula Shader
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: const Color(0xFF050505),
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // Animated gradient background
-          const _GradientBackground(),
-          // Main content
+          // 1. GLSL Shader Background (Precached in main.dart)
+          const NebulaBackground(),
+          
+          // 2. Main Scrollable Content
           CustomScrollView(
             slivers: [
-              // Navigation bar
               SliverToBoxAdapter(child: _buildNavBar()),
-              // Hero section
               SliverToBoxAdapter(child: _buildHeroSection()),
-              // Features section
               SliverToBoxAdapter(child: _buildFeaturesSection()),
-              // Footer
-              SliverToBoxAdapter(child: _buildFooter()),
+              SliverFillRemaining(hasScrollBody: false, child: _buildFooter()),
             ],
           ),
-          // AI Chatbot floating button
+          
+          // 3. Floating AI Chatbot
           const ChatButton(),
         ],
       ),
@@ -55,409 +62,181 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   Widget _buildNavBar() {
-    final width = MediaQuery.of(context).size.width;
-    final isDesktop = width > 900;
-    final isMobile = width < 600;
-
     return Container(
-      padding:
-          EdgeInsets.symmetric(horizontal: isMobile ? 16 : 32, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
       decoration: BoxDecoration(
-        color: AppColors.bgDark.withOpacity(0.8),
-        border: const Border(
-          bottom: BorderSide(color: AppColors.border),
-        ),
+        color: const Color(0xFF050505).withOpacity(0.5), // Semi-transparent
+        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.1))),
       ),
       child: Row(
         children: [
-          // Logo
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primary, AppColors.accent],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Center(
-                  child: Text('🛡️', style: TextStyle(fontSize: 20)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              if (!isMobile) // Optional: Hide title on very small screens if needed
-                Text(
-                  'SafeTravel',
-                  style: GoogleFonts.inter(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-            ],
-          ),
+          Text(
+            'SAFETRAVEL', // Uppercase for impact
+            style: GoogleFonts.syncopate( // Wide, futuristic
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: 2.0,
+            ),
+          ).animate().fadeIn(duration: 600.ms),
+          
           const Spacer(),
-          // Desktop Navigation
-          if (isDesktop) ...[
+          
+          if (_user == null)
             Row(
               children: [
-                _NavLink(text: 'Home', isActive: true, onTap: () {}),
-                const SizedBox(width: 40),
-                _NavLink(
-                  text: 'Safety Zones',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Safety Map feature - Navigate to web version'),
-                      ),
-                    );
-                    context
-                        .go('/geofencing', extra: {'triggerAnimation': true});
-                  },
+                TextButton(
+                  onPressed: () => showLoginDialog(context),
+                  child: Text('LOG IN', style: GoogleFonts.inter(color: Colors.white70, letterSpacing: 1.0)),
                 ),
-                const SizedBox(width: 40),
-                _NavLink(
-                  text: 'Transit Tracker',
-                  onTap: () {
-                    context.go('/tracker');
-                  },
+                const SizedBox(width: 16),
+                LiquidButton(text: 'SIGN UP', onTap: () => showSignupDialog(context)),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B5CF6).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.5)),
+                  ),
+                  child: Text(
+                     _user!.email?.split('@')[0].toUpperCase() ?? 'PILOT',
+                     style: GoogleFonts.spaceMono(color: const Color(0xFF8B5CF6), fontSize: 12),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                IconButton(
+                  icon: const Icon(Icons.power_settings_new, color: Colors.white54),
+                  onPressed: () => FirebaseAuth.instance.signOut(),
                 ),
               ],
             ),
-            const SizedBox(width: 40),
-            _buildAuthSection(),
-          ] else ...[
-            // Mobile Menu Button
-            IconButton(
-              icon: const Icon(Icons.menu, color: AppColors.textPrimary),
-              onPressed: () => _showMobileMenu(context),
-            ),
-          ],
         ],
       ),
     );
   }
 
-  void _showMobileMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.bgCard,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _MobileMenuLink(
-                text: 'Home',
-                icon: Icons.home,
-                isActive: true,
-                onTap: () => Navigator.pop(context),
-              ),
-              _MobileMenuLink(
-                text: 'Safety Map',
-                icon: Icons.map,
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Navigate to Safety Map')),
-                  );
-                },
-              ),
-              _MobileMenuLink(
-                text: 'Transit Tracker',
-                icon: Icons.directions_bus,
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Navigate to Transit Tracker')),
-                  );
-                },
-              ),
-              const Divider(color: AppColors.border, height: 32),
-              if (_user != null) ...[
-                ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppColors.primary,
-                    child: Text(
-                      (_user!.displayName ?? _user!.email ?? 'U')[0]
-                          .toUpperCase(),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  title: Text(
-                    _user!.displayName ?? _user!.email ?? 'User',
-                    style: const TextStyle(color: AppColors.textPrimary),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.logout,
-                        color: AppColors.textSecondary),
-                    onPressed: () {
-                      FirebaseAuth.instance.signOut();
-                      Navigator.pop(context);
-                    },
-                  ),
-                ),
-              ] else ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      showLoginDialog(context);
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      side: const BorderSide(color: AppColors.border),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text('Log In'),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      showSignupDialog(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text('Sign Up'),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildAuthSection() {
-    if (_user != null) {
-      // Logged in state
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.circular(50),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.accent],
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  () {
-                    final name = _user!.displayName;
-                    final email = _user!.email;
-                    String initial = 'U';
-                    if (name != null && name.isNotEmpty) {
-                      initial = name[0];
-                    } else if (email != null && email.isNotEmpty) {
-                      initial = email[0];
-                    }
-                    return initial.toUpperCase();
-                  }(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              _user!.displayName ?? _user!.email?.split('@')[0] ?? 'User',
-              style: const TextStyle(color: AppColors.textPrimary),
-            ),
-            const SizedBox(width: 12),
-            TextButton(
-              onPressed: () => FirebaseAuth.instance.signOut(),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.textSecondary,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-              child: const Text('Logout'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Logged out state
-    return Row(
-      children: [
-        TextButton(
-          onPressed: () => showLoginDialog(context),
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.textSecondary,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          ),
-          child: const Text('Log In'),
-        ),
-        const SizedBox(width: 8),
-        ElevatedButton(
-          onPressed: () => showSignupDialog(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          child: const Text('Sign Up'),
-        ),
-      ],
-    );
-  }
-
   Widget _buildHeroSection() {
+    final size = MediaQuery.of(context).size;
+    
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 32,
-        vertical: MediaQuery.of(context).size.height * 0.15,
-      ),
+      height: size.height * 0.85,
+      alignment: Alignment.center,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Badge
+          // Animated Badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.15),
-              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-              borderRadius: BorderRadius.circular(50),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('🚀', style: TextStyle(fontSize: 14)),
-                const SizedBox(width: 8),
-                Text(
-                  'Built at Hackathon 2026',
-                  style: TextStyle(
-                    color: AppColors.primaryLight,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
+             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+             decoration: BoxDecoration(
+               color: Colors.white.withOpacity(0.05),
+               borderRadius: BorderRadius.circular(50),
+               border: Border.all(color: const Color(0xFF00F0FF).withOpacity(0.3)),
+             ),
+             child: Text(
+               'SYSTEM ONLINE • V2.4.0',
+               style: GoogleFonts.spaceMono(color: const Color(0xFF00F0FF), fontSize: 10, letterSpacing: 2),
+             ),
+          ).animate().slideY(begin: -0.5, end: 0).fadeIn(),
+          
+          const SizedBox(height: 32),
+          
+          // HERO TEXT: "Navigate India Safely"
+          // Staggered Slide + Fade + Shimmer
+          Column(
+             children: [
+               Text(
+                 'NAVIGATE INDIA',
+                 textAlign: TextAlign.center,
+                 style: GoogleFonts.syncopate(
+                   fontSize: 56, // Large
+                   fontWeight: FontWeight.w900,
+                   color: Colors.white,
+                   height: 1.0,
+                   letterSpacing: -2.0,
+                 ),
+               ).animate()
+                 .slideY(begin: 0.2, end: 0, duration: 800.ms, curve: Curves.easeOutCirc)
+                 .fadeIn(duration: 800.ms)
+                 .shimmer(delay: 1000.ms, duration: 1500.ms, color: Colors.white.withOpacity(0.5)),
+                 
+               Text(
+                 'SAFELY',
+                 textAlign: TextAlign.center,
+                 style: GoogleFonts.syncopate(
+                   fontSize: 56,
+                   fontWeight: FontWeight.w900,
+                   color: const Color(0xFF8B5CF6), // Neon Purple
+                   height: 1.0,
+                   letterSpacing: -2.0,
+                   shadows: [
+                     BoxShadow(color: const Color(0xFF8B5CF6).withOpacity(0.6), blurRadius: 40)
+                   ],
+                 ),
+               ).animate()
+                 .slideY(begin: 0.2, end: 0, delay: 200.ms, duration: 800.ms, curve: Curves.easeOutCirc)
+                 .fadeIn(delay: 200.ms)
+                 .shimmer(delay: 1200.ms, duration: 1500.ms, color: const Color(0xFF00F0FF)),
+             ],
           ),
-          const SizedBox(height: 24),
-          // Title
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Navigate India ',
-                  style: GoogleFonts.inter(
-                    fontSize: 56,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                WidgetSpan(
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [AppColors.primary, AppColors.accent],
-                    ).createShader(bounds),
-                    child: Text(
-                      'Safely',
-                      style: GoogleFonts.inter(
-                        fontSize: 56,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
+          
+          const SizedBox(height: 32),
+          
           // Subtitle
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 650),
-            child: Text(
-              'Real-time crowd-sourced safety zones and public transit tracking to help tourists explore with confidence.',
-              style: GoogleFonts.inter(
-                fontSize: 20,
-                color: AppColors.textSecondary,
-                height: 1.7,
-              ),
-              textAlign: TextAlign.center,
+          Text(
+            'Real-time crowd-sourced safety zones and AI-powered transit tracking.\nExplore the world with an invisible shield.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              color: Colors.white60,
+              height: 1.6,
             ),
-          ),
-          const SizedBox(height: 40),
-          // CTA Buttons
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            alignment: WrapAlignment.center,
+          ).animate().fadeIn(delay: 600.ms),
+          
+          const SizedBox(height: 56),
+          
+          // Actions
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              ElevatedButton(
-                onPressed: () {
-                  context.go('/geofencing', extra: {'triggerAnimation': true});
+              LiquidButton(
+                text: 'EXPLORE MAP',
+                icon: Icons.map,
+                onTap: () {
+                    // Warp Speed Transition
+                    Navigator.of(context).push(PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          WarpTransition(
+                        onFinished: () {
+                          // Pass extra trigger
+                          context.go('/geofencing', extra: {'triggerAnimation': true});
+                        },
+                      ),
+                      opaque: false,
+                    ));
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+              ).animate().scale(delay: 800.ms, duration: 400.ms, curve: Curves.easeOutBack),
+              
+              const SizedBox(width: 24),
+              
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => context.go('/tracker'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.white24),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('TRACK TRANSIT', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1)),
                   ),
                 ),
-                child: const Text(
-                  'Explore Safety Zones',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
-              OutlinedButton(
-                onPressed: () {
-                  context.go('/tracker');
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textPrimary,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                  side: const BorderSide(color: AppColors.border, width: 2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'Track Transit',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
+              ).animate().scale(delay: 900.ms, duration: 400.ms, curve: Curves.easeOutBack),
             ],
           ),
         ],
@@ -467,477 +246,109 @@ class _LandingPageState extends State<LandingPage> {
 
   Widget _buildFeaturesSection() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 96),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 80),
       child: Column(
         children: [
-          // Section header
-          Text(
-            'Two Powerful Tools, One Platform',
-            style: GoogleFonts.inter(
-              fontSize: 40,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-          ),
+          Text('PREMIUM UTILITY', style: GoogleFonts.spaceMono(color: Colors.white24, fontSize: 12, letterSpacing: 4)).animate().fadeIn(),
           const SizedBox(height: 16),
-          Text(
-            'Everything you need for safe and smart travel in India',
-            style: GoogleFonts.inter(
-              fontSize: 18,
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
+          Text('ADVANCED SYSTEMS', style: GoogleFonts.syncopate(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)).animate().fadeIn(),
           const SizedBox(height: 64),
-          // Features grid
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 900;
-              return Wrap(
-                spacing: 24,
-                runSpacing: 24,
-                children: [
-                  _FeatureCard(
-                    icon: '🗺️',
-                    iconBgColor: AppColors.success.withOpacity(0.15),
-                    title: 'Safety Zones (Geofencing)',
-                    description:
-                        "View real-time safety ratings for areas across Delhi. Community-powered zones show you where it's safe to go, where to be cautious, and areas to avoid.",
-                    linkText: 'Open Map',
-                    status: FeatureStatus.live,
-                    width: isWide
-                        ? (constraints.maxWidth - 24) / 2
-                        : constraints.maxWidth,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) =>
-                              WarpTransition(
-                            onFinished: () {
-                              context.go('/geofencing', extra: {'triggerAnimation': true});
-                            },
-                          ),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                            return FadeTransition(opacity: animation, child: child);
-                          },
-                          opaque: false, // Ensure it overlays smoothly
-                        ),
-                      );
-                    },
-                  ),
-                  _FeatureCard(
-                    icon: '🚌',
-                    iconBgColor: AppColors.primary.withOpacity(0.15),
-                    title: 'Transit Tracker',
-                    description:
-                        "Track public transportation in real-time. Find bus routes, train schedules, and live vehicle positions across India's major cities.",
-                    linkText: 'Track Now',
-                    status: FeatureStatus.live,
-                    width: isWide
-                        ? (constraints.maxWidth - 24) / 2
-                        : constraints.maxWidth,
-                    onTap: () {},
-                  ),
-                  _FeatureCard(
-                    icon: '👍',
-                    iconBgColor: AppColors.accent.withOpacity(0.15),
-                    title: 'Community Voting',
-                    description:
-                        'Share your experience by voting on zone safety. Your feedback updates the map in real-time and helps fellow travelers stay safe.',
-                    linkText: 'Start Voting',
-                    status: FeatureStatus.beta,
-                    width: isWide
-                        ? (constraints.maxWidth - 24) / 2
-                        : constraints.maxWidth,
-                    onTap: () {},
-                  ),
-                  _FeatureCard(
-                    icon: '🆘',
-                    iconBgColor: AppColors.danger.withOpacity(0.15),
-                    title: 'Emergency SOS',
-                    description:
-                        'One-tap emergency button with automatic location sharing to your trusted contacts and local authorities.',
-                    linkText: 'Open SOS',
-                    status: FeatureStatus.live,
-                    width: isWide
-                        ? (constraints.maxWidth - 24) / 2
-                        : constraints.maxWidth,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const SosPage()),
-                      );
-                    },
-                  ),
-                ],
-              );
-            },
+          
+          // Cards Grid
+          Wrap(
+            spacing: 32,
+            runSpacing: 32,
+            alignment: WrapAlignment.center,
+            children: [
+               _buildGlassFeature(
+                 title: 'SAFETY ZONES',
+                 desc: 'Live heatmaps of safe and danger zones across your city.',
+                 icon: Icons.shield_moon,
+                 color: const Color(0xFF00F0FF),
+                 onTap: () => context.go('/geofencing'),
+                 label: 'LIVE',
+               ),
+               _buildGlassFeature(
+                 title: 'TRANSIT TRACKER',
+                 desc: 'AI-predicted arrivals for buses and trains in real-time.',
+                 icon: Icons.directions_transit_filled,
+                 color: const Color(0xFF8B5CF6),
+                 onTap: () => context.go('/tracker'),
+                 label: 'BETA',
+               ),
+                 _buildGlassFeature(
+                 title: 'EMERGENCY SOS',
+                 desc: 'Instant beacon to authorities and trusted contacts.',
+                 icon: Icons.emergency_share,
+                 color: Colors.redAccent,
+                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SosPage())),
+                 label: 'ACTIVE',
+               ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGlassFeature({
+    required String title,
+    required String desc,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+    required String label,
+  }) {
+    // GlassCard wrapper from glass_card.dart
+    return SizedBox(
+      width: 350,
+      height: 350,
+      child: GlassCard(
+        baseColor: color,
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+             Row(
+               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+               children: [
+                 Icon(icon, color: color, size: 32),
+                 Container(
+                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                   decoration: BoxDecoration(
+                     color: color.withOpacity(0.1),
+                     borderRadius: BorderRadius.circular(4),
+                     border: Border.all(color: color.withOpacity(0.3)),
+                   ),
+                   child: Text(label, style: GoogleFonts.spaceMono(fontSize: 10, color: color)),
+                 ),
+               ],
+             ),
+             const Spacer(),
+             Text(title, style: GoogleFonts.syncopate(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+             const SizedBox(height: 12),
+             Text(desc, style: GoogleFonts.inter(fontSize: 14, color: Colors.white60, height: 1.5)),
+             const SizedBox(height: 24),
+             Row(
+               children: [
+                 Text('ACCESS TERMINAL', style: GoogleFonts.spaceMono(fontSize: 10, color: color)),
+                 const SizedBox(width: 8),
+                 Icon(Icons.arrow_forward_ios, color: color, size: 10),
+               ],
+             ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildFooter() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: AppColors.border),
-        ),
-      ),
-      child: Center(
-        child: Text(
-          'Built with 💜 by Team SafeTravel at Hackathon 2026',
-          style: GoogleFonts.inter(
-            color: AppColors.textSecondary,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Gradient background widget
-class _GradientBackground extends StatelessWidget {
-  const _GradientBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.bgDark,
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -100,
-            left: -100,
-            child: Container(
-              width: 600,
-              height: 600,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.primary.withOpacity(0.15),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -100,
-            right: -100,
-            child: Container(
-              width: 600,
-              height: 600,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.accent.withOpacity(0.1),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Navigation link widget
-class _NavLink extends StatefulWidget {
-  final String text;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _NavLink({
-    required this.text,
-    this.isActive = false,
-    required this.onTap,
-  });
-
-  @override
-  State<_NavLink> createState() => _NavLinkState();
-}
-
-class _NavLinkState extends State<_NavLink> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              widget.text,
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: widget.isActive || _isHovered
-                    ? AppColors.textPrimary
-                    : AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (widget.isActive)
-              Container(
-                height: 2,
-                width: 30,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primary, AppColors.accent],
-                  ),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MobileMenuLink extends StatelessWidget {
-  final String text;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool isActive;
-
-  const _MobileMenuLink({
-    required this.text,
-    required this.icon,
-    required this.onTap,
-    this.isActive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isActive ? AppColors.primary : AppColors.textSecondary,
-      ),
-      title: Text(
-        text,
-        style: TextStyle(
-          color: isActive ? AppColors.textPrimary : AppColors.textSecondary,
-          fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-        ),
-      ),
-      onTap: onTap,
-      contentPadding: EdgeInsets.zero,
-    );
-  }
-}
-
-// Feature status enum
-enum FeatureStatus { live, beta, comingSoon }
-
-// Feature card widget
-class _FeatureCard extends StatefulWidget {
-  final String icon;
-  final Color iconBgColor;
-  final String title;
-  final String description;
-  final String linkText;
-  final FeatureStatus status;
-  final double width;
-  final VoidCallback? onTap;
-
-  const _FeatureCard({
-    required this.icon,
-    required this.iconBgColor,
-    required this.title,
-    required this.description,
-    required this.linkText,
-    required this.status,
-    required this.width,
-    this.onTap,
-  });
-
-  @override
-  State<_FeatureCard> createState() => _FeatureCardState();
-}
-
-class _FeatureCardState extends State<_FeatureCard> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: widget.width,
-        padding: const EdgeInsets.all(32),
-        transform: Matrix4.translationValues(0, _isHovered ? -8 : 0, 0),
-        decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: _isHovered
-                ? AppColors.primary.withOpacity(0.3)
-                : AppColors.border,
-          ),
-          boxShadow: _isHovered
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
-                    blurRadius: 50,
-                    offset: const Offset(0, 25),
-                  ),
-                ]
-              : null,
-        ),
-        child: Stack(
-          children: [
-            // Top accent line (visible on hover)
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 200),
-              top: 0,
-              left: 0,
-              right: 0,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: _isHovered ? 1 : 0,
-                child: Container(
-                  height: 3,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.accent],
-                    ),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-            ),
-            // Status badge
-            Positioned(
-              top: 0,
-              right: 0,
-              child: _buildStatusBadge(),
-            ),
-            // Content
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: widget.iconBgColor,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Center(
-                    child:
-                        Text(widget.icon, style: const TextStyle(fontSize: 32)),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  widget.title,
-                  style: GoogleFonts.inter(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  widget.description,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    color: AppColors.textSecondary,
-                    height: 1.7,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                GestureDetector(
-                  onTap: widget.onTap,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.linkText,
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: widget.onTap != null
-                              ? AppColors.primaryLight
-                              : AppColors.textSecondary.withOpacity(0.5),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.arrow_forward,
-                        size: 16,
-                        color: widget.onTap != null
-                            ? AppColors.primaryLight
-                            : AppColors.textSecondary.withOpacity(0.5),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge() {
-    String text;
-    Color bgColor;
-    Color textColor;
-
-    switch (widget.status) {
-      case FeatureStatus.live:
-        text = '🟢 Live';
-        bgColor = AppColors.success.withOpacity(0.2);
-        textColor = AppColors.success;
-        break;
-      case FeatureStatus.beta:
-        text = 'Beta';
-        bgColor = AppColors.warning.withOpacity(0.2);
-        textColor = AppColors.warning;
-        break;
-      case FeatureStatus.comingSoon:
-        text = 'Coming Soon';
-        bgColor = Colors.grey.withOpacity(0.2);
-        textColor = Colors.grey;
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
+      padding: const EdgeInsets.all(40),
+      alignment: Alignment.center,
       child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-        ),
+        'SAFETRAVEL SYSTEMS • 2026',
+        style: GoogleFonts.spaceMono(color: Colors.white10, fontSize: 10, letterSpacing: 2),
       ),
     );
   }
