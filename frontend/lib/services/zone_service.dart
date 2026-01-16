@@ -161,7 +161,16 @@ class ZoneService {
 
     // Group zones by city
     for (final zone in MockZones.allIndiaZones) {
-      final prefix = zone.id.split('_').first;
+      // Try two-part prefix first (e.g., jai_muj), then single-part (e.g., jai)
+      final parts = zone.id.split('_');
+      String prefix;
+      if (parts.length >= 2 &&
+          cityNames.containsKey('${parts[0]}_${parts[1]}')) {
+        prefix = '${parts[0]}_${parts[1]}';
+      } else {
+        prefix = parts.first;
+      }
+
       final cityName = cityNames[prefix] ?? prefix.toUpperCase();
       final cityId =
           cityName.toLowerCase().replaceAll(' ', '_').replaceAll('&', 'and');
@@ -212,6 +221,7 @@ class ZoneService {
       'pne': 'Pune',
       'ahm': 'Ahmedabad',
       'jai': 'Jaipur',
+      'jai_muj': 'Jaipur',
       'lko': 'Lucknow',
       'chd': 'Chandigarh',
       'goa': 'Goa',

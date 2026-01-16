@@ -80,22 +80,30 @@ class AppState {
   final bool isInitialized;
   final bool showWarning;
   final String? warningMessage;
+  final String? warningZoneType; // 'safe', 'caution', or 'danger'
+  final String? warningZoneId; // Unique zone ID for key generation
 
   const AppState({
     this.isInitialized = false,
     this.showWarning = false,
     this.warningMessage,
+    this.warningZoneType,
+    this.warningZoneId,
   });
 
   AppState copyWith({
     bool? isInitialized,
     bool? showWarning,
     String? warningMessage,
+    String? warningZoneType,
+    String? warningZoneId,
   }) {
     return AppState(
       isInitialized: isInitialized ?? this.isInitialized,
       showWarning: showWarning ?? this.showWarning,
       warningMessage: warningMessage,
+      warningZoneType: warningZoneType,
+      warningZoneId: warningZoneId,
     );
   }
 }
@@ -107,12 +115,22 @@ class AppStateNotifier extends StateNotifier<AppState> {
     state = state.copyWith(isInitialized: value);
   }
 
-  void showWarning(String message) {
-    state = state.copyWith(showWarning: true, warningMessage: message);
+  void showWarning(String message, {String? zoneType, String? zoneId}) {
+    state = state.copyWith(
+      showWarning: true,
+      warningMessage: message,
+      warningZoneType: zoneType,
+      warningZoneId: zoneId,
+    );
   }
 
   void hideWarning() {
-    state = state.copyWith(showWarning: false, warningMessage: null);
+    state = state.copyWith(
+      showWarning: false,
+      warningMessage: null,
+      warningZoneType: null,
+      warningZoneId: null,
+    );
   }
 }
 

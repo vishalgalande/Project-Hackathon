@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:latlong2/latlong.dart';
@@ -22,6 +23,7 @@ class CommandCenterPage extends ConsumerStatefulWidget {
 class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   final MapController _mapController = MapController();
   late DraggableScrollableController _sheetController;
+  late FocusNode _focusNode; // For keyboard events
   // Center of India (approximately)
   final LatLng _initialCenter = const LatLng(20.5937, 78.9629);
   final double _initialZoom = 5.0; // Zoom out to see all India
@@ -122,6 +124,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   void initState() {
     super.initState();
     _sheetController = DraggableScrollableController();
+    _focusNode = FocusNode();
     _initUserLocation();
   }
 
@@ -173,6 +176,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   @override
   void dispose() {
     _sheetController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -182,412 +186,425 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
     final userLocation = ref.watch(userLocationProvider);
     final appState = ref.watch(appStateProvider);
 
-    // Listen for zone warnings
-    ref.listen(appStateProvider, (previous, next) {
-      if (next.showWarning && next.warningMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.warning_amber_rounded, color: Colors.white),
-                const SizedBox(width: 12),
-                Text(next.warningMessage!),
-              ],
-            ),
-            backgroundColor: AppColors.dangerZone,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
-    });
+    // Note: Warning is now shown via custom widget in Stack, not SnackBar
+    // Handle keyboard events: Space for simulation, 1/2/3 for speed
+    void _handleKeyEvent(KeyEvent event) {
+      if (event is! KeyDownEvent) return;
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          final trackingService = ref.read(trackingServiceProvider);
-          if (userLocation.isTracking) {
-            trackingService.stopSimulation();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Simulation Stopped')),
-            );
-          } else {
-            trackingService.startSimulation();
-            // Move map to start of Jaipur simulation
-            _mapController.move(const LatLng(26.9114, 75.8190), 14);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Simulation Started: Jaipur Route')),
-            );
-          }
-        },
-        backgroundColor:
-            userLocation.isTracking ? Colors.red : AppColors.primary,
-        icon: Icon(userLocation.isTracking ? Icons.stop : Icons.play_arrow),
-        label: Text(
-            userLocation.isTracking ? 'Stop Tracking' : 'Start Simulation'),
-      ),
-      body: Stack(
-        children: [
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: _initialCenter,
-              initialZoom: _initialZoom,
-              minZoom: 4,
-              maxZoom: 18,
-              // India bounds - prevents panning outside India
-              // maxBounds: LatLngBounds(
-              //   const LatLng(6.0, 68.0),   // Southwest
-              //   const LatLng(35.5, 97.5),  // Northeast
-              // ),
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all,
-                enableScrollWheel: true,
-                pinchZoomThreshold: 0.3,
-              ),
-              onMapReady: () {
-                setState(() {
-                  _mapReady = true;
-                });
-                // Move to user location if available
-                if (_userLocation != null) {
-                  _mapController.move(_userLocation!, 10);
-                }
-              },
-              onPositionChanged: (position, hasGesture) {
-                // Detect current state based on map center
-                final center = position.center;
-                final zoom = position.zoom;
-                if (center != null && zoom != null && zoom > 7) {
-                  final newState =
-                      _detectState(center.latitude, center.longitude);
-                  if (newState != _currentState) {
-                    setState(() {
-                      _currentState = newState;
-                    });
+      final trackingService = ref.read(trackingServiceProvider);
+      final isTracking = ref.read(userLocationProvider).isTracking;
+
+      // Spacebar: Toggle simulation
+      if (event.logicalKey == LogicalKeyboardKey.space) {
+        if (isTracking) {
+          trackingService.stopSimulation();
+        } else {
+          trackingService.startSimulation();
+          // Move map to Railway Station (start point)
+          _mapController.move(const LatLng(26.9208, 75.7866), 13);
+        }
+      }
+      // Key "1": 1x speed (normal)
+      else if (event.logicalKey == LogicalKeyboardKey.digit1 && isTracking) {
+        trackingService.setSpeed(1);
+      }
+      // Key "2": 2x speed
+      else if (event.logicalKey == LogicalKeyboardKey.digit2 && isTracking) {
+        trackingService.setSpeed(2);
+      }
+      // Key "3": 3x speed
+      else if (event.logicalKey == LogicalKeyboardKey.digit3 && isTracking) {
+        trackingService.setSpeed(3);
+      }
+    }
+
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        _handleKeyEvent(event);
+        return KeyEventResult.handled;
+      },
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        body: Stack(
+          children: [
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _initialCenter,
+                initialZoom: _initialZoom,
+                minZoom: 4,
+                maxZoom: 18,
+                // India bounds - prevents panning outside India
+                // maxBounds: LatLngBounds(
+                //   const LatLng(6.0, 68.0),   // Southwest
+                //   const LatLng(35.5, 97.5),  // Northeast
+                // ),
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.all,
+                  enableScrollWheel: true,
+                  pinchZoomThreshold: 0.3,
+                ),
+                onMapReady: () {
+                  setState(() {
+                    _mapReady = true;
+                  });
+                  // Move to user location if available
+                  if (_userLocation != null) {
+                    _mapController.move(_userLocation!, 10);
                   }
-                } else {
-                  if (_currentState != '') {
-                    setState(() {
-                      _currentState = '';
-                    });
+                },
+                onPositionChanged: (position, hasGesture) {
+                  // Detect current state based on map center
+                  final center = position.center;
+                  final zoom = position.zoom;
+                  if (center != null && zoom != null && zoom > 7) {
+                    final newState =
+                        _detectState(center.latitude, center.longitude);
+                    if (newState != _currentState) {
+                      setState(() {
+                        _currentState = newState;
+                      });
+                    }
+                  } else {
+                    if (_currentState != '') {
+                      setState(() {
+                        _currentState = '';
+                      });
+                    }
                   }
-                }
-                // Trigger rebuild for zone filtering
-                setState(() {
-                  _currentZoom = position.zoom ?? _currentZoom;
-                });
-              },
-              onTap: (_, __) => {},
-            ),
-            children: [
-              TileLayer(
-                // Switch between Standard and Dark Matter
-                urlTemplate: _isDarkMode
-                    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.safezone',
-                subdomains: const ['a', 'b', 'c'],
-                tileProvider: CancellableNetworkTileProvider(),
+                  // Trigger rebuild for zone filtering
+                  setState(() {
+                    _currentZoom = position.zoom ?? _currentZoom;
+                  });
+                },
+                onTap: (_, __) => {},
               ),
-              // Show individual zones when zoomed in, clusters when zoomed out
-              if (_currentZoom >= _clusterZoomThreshold) ...[
-                PolygonLayer(polygons: _getVisiblePolygons(zones)),
-                MarkerLayer(
-                  markers: [
-                    ..._getVisibleZones(zones).map((zone) {
+              children: [
+                TileLayer(
+                  // Switch between Standard and Dark Matter
+                  urlTemplate: _isDarkMode
+                      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                      : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.safezone',
+                  subdomains: const ['a', 'b', 'c'],
+                  tileProvider: CancellableNetworkTileProvider(),
+                ),
+                // Show individual zones when zoomed in, clusters when zoomed out
+                if (_currentZoom >= _clusterZoomThreshold) ...[
+                  PolygonLayer(polygons: _getVisiblePolygons(zones)),
+                  MarkerLayer(
+                    markers: [
+                      ..._getVisibleZones(zones).map((zone) {
+                        return Marker(
+                          point: LatLng(zone.centerLat, zone.centerLng),
+                          width: 36,
+                          height: 36,
+                          child: GestureDetector(
+                            onTap: () => _showZoneDetails(zone),
+                            child: _buildMarkerIcon(zone.type),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ] else ...[
+                  // Show city clusters when zoomed out
+                  MarkerLayer(
+                    markers: MockZones.getCityClusters().map((cluster) {
                       return Marker(
-                        point: LatLng(zone.centerLat, zone.centerLng),
-                        width: 36,
-                        height: 36,
+                        point: LatLng(cluster.centerLat, cluster.centerLng),
+                        width: 60,
+                        height: 60,
                         child: GestureDetector(
-                          onTap: () => _showZoneDetails(zone),
-                          child: _buildMarkerIcon(zone.type),
+                          onTap: () {
+                            // Zoom into the city
+                            if (_mapReady) {
+                              _mapController.move(
+                                LatLng(cluster.centerLat, cluster.centerLng),
+                                10,
+                              );
+                            }
+                          },
+                          child: _buildClusterMarker(cluster),
                         ),
                       );
-                    }),
-                  ],
-                ),
-              ] else ...[
-                // Show city clusters when zoomed out
-                MarkerLayer(
-                  markers: MockZones.getCityClusters().map((cluster) {
-                    return Marker(
-                      point: LatLng(cluster.centerLat, cluster.centerLng),
-                      width: 60,
-                      height: 60,
-                      child: GestureDetector(
-                        onTap: () {
-                          // Zoom into the city
-                          if (_mapReady) {
-                            _mapController.move(
-                              LatLng(cluster.centerLat, cluster.centerLng),
-                              10,
-                            );
-                          }
-                        },
-                        child: _buildClusterMarker(cluster),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-              // User Location Marker (always visible)
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point:
-                        LatLng(userLocation.latitude, userLocation.longitude),
-                    width: 40,
-                    height: 40,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.blueAccent,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.blueAccent.withOpacity(0.5),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.navigation,
-                          color: Colors.white, size: 20),
-                    ),
+                    }).toList(),
                   ),
                 ],
-              ),
-            ],
-          ),
-
-          // State Indicator Badge (shows when zoomed in)
-          if (_currentState.isNotEmpty)
-            Positioned(
-              top: 100,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: _isDarkMode
-                          ? [Colors.indigo.shade900, Colors.purple.shade900]
-                          : [Colors.indigo.shade600, Colors.purple.shade600],
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.indigo.withOpacity(0.4),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _currentState,
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          letterSpacing: 0.5,
+                // User Location Marker (always visible)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point:
+                          LatLng(userLocation.latitude, userLocation.longitude),
+                      width: 40,
+                      height: 40,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blueAccent,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blueAccent.withOpacity(0.5),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            ),
+                          ],
                         ),
+                        child: const Icon(Icons.navigation,
+                            color: Colors.white, size: 20),
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            // State Indicator Badge (shows when zoomed in)
+            if (_currentState.isNotEmpty)
+              Positioned(
+                top: 100,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: _isDarkMode
+                            ? [Colors.indigo.shade900, Colors.purple.shade900]
+                            : [Colors.indigo.shade600, Colors.purple.shade600],
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.indigo.withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _currentState,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
 
-          // ... Header Positioned ...
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Back Button
-                    GestureDetector(
-                      onTap: () => context.go('/'),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
+            // ... Header Positioned ...
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Back Button
+                      GestureDetector(
+                        onTap: () => context.go('/'),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                              color: _isDarkMode
+                                  ? Colors.black87.withOpacity(0.9)
+                                  : Colors.white.withOpacity(0.9),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(color: Colors.black12, blurRadius: 8)
+                              ]),
+                          child: Icon(Icons.arrow_back,
+                              color:
+                                  _isDarkMode ? Colors.white : Colors.black87),
+                        ),
+                      ),
+
+                      // Boxed Title
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                             color: _isDarkMode
                                 ? Colors.black87.withOpacity(0.9)
                                 : Colors.white.withOpacity(0.9),
-                            shape: BoxShape.circle,
+                            borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(color: Colors.black12, blurRadius: 8)
                             ]),
-                        child: Icon(Icons.arrow_back,
-                            color: _isDarkMode ? Colors.white : Colors.black87),
-                      ),
-                    ),
-
-                    // Boxed Title
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                          color: _isDarkMode
-                              ? Colors.black87.withOpacity(0.9)
-                              : Colors.white.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black12, blurRadius: 8)
-                          ]),
-                      child: Row(
-                        children: [
-                          Icon(Icons.shield_outlined,
-                              color: AppColors.safeZone, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            'SafeZone',
-                            style: GoogleFonts.orbitron(
-                              color:
-                                  _isDarkMode ? Colors.white : Colors.black87,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              letterSpacing: 1.0,
+                        child: Row(
+                          children: [
+                            Icon(Icons.shield_outlined,
+                                color: AppColors.safeZone, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              'SafeZone',
+                              style: GoogleFonts.orbitron(
+                                color:
+                                    _isDarkMode ? Colors.white : Colors.black87,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
                             ),
-                          ),
+                          ],
+                        ),
+                      ),
+
+                      // Right Actions
+                      Row(
+                        children: [
+                          _buildHeaderAction(
+                              Icons.my_location,
+                              _mapReady
+                                  ? () => _mapController.move(_initialCenter, 5)
+                                  : () {}),
+                          const SizedBox(width: 12),
+                          _buildHeaderAction(
+                              _isDarkMode
+                                  ? Icons.wb_sunny_rounded
+                                  : Icons.nightlight_round, () {
+                            setState(() {
+                              _isDarkMode = !_isDarkMode;
+                            });
+                          }),
                         ],
                       ),
-                    ),
-
-                    // Right Actions
-                    Row(
-                      children: [
-                        _buildHeaderAction(
-                            Icons.my_location,
-                            _mapReady
-                                ? () => _mapController.move(_initialCenter, 5)
-                                : () {}),
-                        const SizedBox(width: 12),
-                        _buildHeaderAction(
-                            _isDarkMode
-                                ? Icons.wb_sunny_rounded
-                                : Icons.nightlight_round, () {
-                          setState(() {
-                            _isDarkMode = !_isDarkMode;
-                          });
-                        }),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // Zoom Controls
-          Positioned(
-            right: 16,
-            bottom: 200,
-            child: Column(
-              children: [
-                // Zoom In Button
-                GestureDetector(
-                  onTap: _mapReady
-                      ? () {
-                          final currentZoom = _mapController.camera.zoom;
-                          if (currentZoom < 18) {
-                            _mapController.move(
-                              _mapController.camera.center,
-                              currentZoom + 1,
-                            );
+            // Zoom Controls
+            Positioned(
+              right: 16,
+              bottom: 200,
+              child: Column(
+                children: [
+                  // Zoom In Button
+                  GestureDetector(
+                    onTap: _mapReady
+                        ? () {
+                            final currentZoom = _mapController.camera.zoom;
+                            if (currentZoom < 18) {
+                              _mapController.move(
+                                _mapController.camera.center,
+                                currentZoom + 1,
+                              );
+                            }
                           }
-                        }
-                      : null,
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: _isDarkMode ? Colors.black87 : Colors.white,
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(12)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.add,
-                      color: _isDarkMode ? Colors.white : Colors.black87,
-                      size: 24,
+                        : null,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: _isDarkMode ? Colors.black87 : Colors.white,
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.add,
+                        color: _isDarkMode ? Colors.white : Colors.black87,
+                        size: 24,
+                      ),
                     ),
                   ),
-                ),
-                Container(
-                  width: 44,
-                  height: 1,
-                  color: Colors.grey.shade300,
-                ),
-                // Zoom Out Button
-                GestureDetector(
-                  onTap: _mapReady
-                      ? () {
-                          final currentZoom = _mapController.camera.zoom;
-                          if (currentZoom > 4) {
-                            _mapController.move(
-                              _mapController.camera.center,
-                              currentZoom - 1,
-                            );
-                          }
-                        }
-                      : null,
-                  child: Container(
+                  Container(
                     width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: _isDarkMode ? Colors.black87 : Colors.white,
-                      borderRadius: const BorderRadius.vertical(
-                          bottom: Radius.circular(12)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.remove,
-                      color: _isDarkMode ? Colors.white : Colors.black87,
-                      size: 24,
+                    height: 1,
+                    color: Colors.grey.shade300,
+                  ),
+                  // Zoom Out Button
+                  GestureDetector(
+                    onTap: _mapReady
+                        ? () {
+                            final currentZoom = _mapController.camera.zoom;
+                            if (currentZoom > 4) {
+                              _mapController.move(
+                                _mapController.camera.center,
+                                currentZoom - 1,
+                              );
+                            }
+                          }
+                        : null,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: _isDarkMode ? Colors.black87 : Colors.white,
+                        borderRadius: const BorderRadius.vertical(
+                            bottom: Radius.circular(12)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.remove,
+                        color: _isDarkMode ? Colors.white : Colors.black87,
+                        size: 24,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          // Bottom Sheet
-          _buildBottomPanel(_getVisibleZones(zones)),
-        ],
-      ),
-    );
+            // Zone Warning Widget - Top Left with gradient fade and animation
+            if (appState.showWarning && appState.warningMessage != null)
+              Positioned(
+                top: 120,
+                left: 0,
+                child: _AnimatedZoneWarning(
+                  key: ValueKey(
+                      appState.warningZoneId ?? appState.warningMessage),
+                  message: appState.warningMessage!,
+                  zoneType: appState.warningZoneType ?? 'caution',
+                  onDismiss: () {
+                    ref.read(appStateProvider.notifier).hideWarning();
+                  },
+                ),
+              ),
+
+            // Bottom Sheet
+            _buildBottomPanel(_getVisibleZones(zones)),
+          ],
+        ),
+      ), // Close Scaffold
+    ); // Close Focus
   }
 
   Widget _buildHeaderAction(IconData icon, VoidCallback onTap) {
@@ -994,6 +1011,116 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Animated zone warning widget with fade in/out effect
+class _AnimatedZoneWarning extends StatefulWidget {
+  final String message;
+  final String zoneType;
+  final VoidCallback onDismiss;
+
+  const _AnimatedZoneWarning({
+    super.key,
+    required this.message,
+    required this.zoneType,
+    required this.onDismiss,
+  });
+
+  @override
+  State<_AnimatedZoneWarning> createState() => _AnimatedZoneWarningState();
+}
+
+class _AnimatedZoneWarningState extends State<_AnimatedZoneWarning> {
+  double _opacity = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fade in immediately
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (mounted) setState(() => _opacity = 1.0);
+    });
+
+    // Start fade out after 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _opacity = 0.0);
+    });
+
+    // Call onDismiss after fade out completes (2.5 seconds total)
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (mounted) widget.onDismiss();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Get color based on zone type
+    Color zoneColor;
+    IconData zoneIcon;
+    switch (widget.zoneType.toLowerCase()) {
+      case 'danger':
+        zoneColor = AppColors.dangerZone;
+        zoneIcon = Icons.warning_amber_rounded;
+        break;
+      case 'safe':
+        zoneColor = AppColors.safeZone;
+        zoneIcon = Icons.check_circle_outline;
+        break;
+      case 'caution':
+      default:
+        zoneColor = AppColors.cautionZone;
+        zoneIcon = Icons.info_outline;
+        break;
+    }
+
+    // Get 35% of screen width for the gradient fade
+    final screenWidth = MediaQuery.of(context).size.width;
+    final gradientWidth = screenWidth * 0.35;
+
+    return AnimatedOpacity(
+      opacity: _opacity,
+      duration: const Duration(milliseconds: 500),
+      child: Container(
+        width: gradientWidth,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              zoneColor.withOpacity(0.95),
+              zoneColor.withOpacity(0.8),
+              zoneColor.withOpacity(0.4),
+              zoneColor.withOpacity(0.0),
+            ],
+            stops: const [0.0, 0.5, 0.8, 1.0],
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              zoneIcon,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                widget.message,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
