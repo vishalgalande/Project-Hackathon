@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Lenis from "lenis";
 import "./globals.css";
+
+// Dynamic import for loading screen
+const LoadingScreen = dynamic(
+  () => import("@/components/Loading/LoadingScreen"),
+  { ssr: false }
+);
 
 export default function RootLayout({
   children,

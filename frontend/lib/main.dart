@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'features/landing_page.dart';
+import 'features/splash_screen.dart';
 import 'features/auth/auth_dialogs.dart';
 import 'pages/command_center_page.dart';
 import 'pages/intel_page.dart';
@@ -53,8 +54,13 @@ void main() async {
 
 // GoRouter configuration
 final GoRouter _router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash',
   routes: [
+    GoRoute(
+      path: '/splash',
+      name: 'splash',
+      builder: (context, state) => const SplashScreen(),
+    ),
     GoRoute(
       path: '/',
       name: 'home',
@@ -85,6 +91,7 @@ final GoRouter _router = GoRouter(
     ),
   ],
 );
+
 
 class SafeTravelApp extends StatelessWidget {
   const SafeTravelApp({super.key});
