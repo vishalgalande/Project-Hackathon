@@ -26,7 +26,7 @@ export default function GuardianToggle() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.15 }}
-                        className="fixed inset-0 z-[100] bg-cyber-cyan pointer-events-none"
+                        className="fixed inset-0 z-[100] bg-primary pointer-events-none"
                     />
                 )}
             </AnimatePresence>
@@ -41,7 +41,7 @@ export default function GuardianToggle() {
                             exit={{ opacity: 0 }}
                             className="absolute inset-0 pointer-events-none"
                         >
-                            <div className="absolute inset-0 bg-gradient-radial from-cyber-cyan/10 via-transparent to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-radial from-primary/10 via-transparent to-transparent" />
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -60,7 +60,7 @@ export default function GuardianToggle() {
                         </span>
                         <h2 className="heading-section mt-4">
                             <span className="text-white">Guardian </span>
-                            <span className={`transition-colors duration-500 ${isActive ? "text-cyber-cyan text-glow-cyan" : "text-white/50"}`}>
+                            <span className={`transition-colors duration-500 ${isActive ? "text-primary text-glow-primary" : "text-white/50"}`}>
                                 Angel
                             </span>
                         </h2>
@@ -92,7 +92,7 @@ export default function GuardianToggle() {
                                     transition={{ duration: 2, repeat: isActive ? Infinity : 0 }}
                                     className={`
                     p-6 rounded-2xl transition-all duration-500
-                    ${isActive ? "bg-cyber-cyan/20 text-cyber-cyan" : "bg-white/5 text-white/30"}
+                    ${isActive ? "bg-primary/20 text-primary" : "bg-white/5 text-white/30"}
                   `}
                                 >
                                     {isActive ? (
@@ -106,7 +106,7 @@ export default function GuardianToggle() {
                                     <div className="text-mono text-xs text-white/50 uppercase tracking-widest mb-1">
                                         Protection Status
                                     </div>
-                                    <div className={`text-2xl md:text-3xl font-bold transition-colors duration-500 ${isActive ? "text-cyber-cyan" : "text-white/50"}`}>
+                                    <div className={`text-2xl md:text-3xl font-bold transition-colors duration-500 ${isActive ? "text-primary" : "text-white/50"}`}>
                                         {isActive ? "ACTIVE" : "STANDBY"}
                                     </div>
                                 </div>
@@ -121,7 +121,7 @@ export default function GuardianToggle() {
                                 <div className={`
                   w-32 h-16 rounded-full p-1 transition-all duration-500
                   ${isActive
-                                        ? "bg-cyber-cyan/20 border-2 border-cyber-cyan"
+                                        ? "bg-primary/20 border-2 border-primary"
                                         : "bg-white/5 border-2 border-white/20"
                                     }
                 `}>
@@ -131,7 +131,7 @@ export default function GuardianToggle() {
                                         className={`
                       w-14 h-14 rounded-full flex items-center justify-center
                       transition-colors duration-500
-                      ${isActive ? "bg-cyber-cyan" : "bg-white/20"}
+                      ${isActive ? "bg-primary" : "bg-white/20"}
                     `}
                                     >
                                         <Power className={`w-6 h-6 ${isActive ? "text-void-black" : "text-white/50"}`} />
@@ -141,7 +141,7 @@ export default function GuardianToggle() {
                                 {/* Pulse ring when active */}
                                 {isActive && (
                                     <motion.div
-                                        className="absolute inset-0 rounded-full border-2 border-cyber-cyan"
+                                        className="absolute inset-0 rounded-full border-2 border-primary"
                                         initial={{ opacity: 1, scale: 1 }}
                                         animate={{ opacity: 0, scale: 1.5 }}
                                         transition={{ duration: 1.5, repeat: Infinity }}
@@ -166,7 +166,7 @@ export default function GuardianToggle() {
                                 <div key={i} className="text-center">
                                     <div className={`
                     w-2 h-2 rounded-full mx-auto mb-2 transition-all duration-500
-                    ${item.status ? "bg-cyber-cyan animate-pulse" : "bg-white/20"}
+                    ${item.status ? "bg-primary animate-pulse" : "bg-white/20"}
                   `} />
                                     <div className="text-mono text-xs text-white/50 uppercase">
                                         {item.label}
