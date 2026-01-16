@@ -11,20 +11,22 @@ import '../../widgets/tilt_card.dart';
 
 Future<bool> showCyberLogin(BuildContext context) async {
   return await showDialog<bool>(
-    context: context,
-    barrierColor: Colors.black.withOpacity(0.9), // Darker barrier
-    barrierDismissible: true,
-    builder: (context) => const _CyberAuthDialog(isLogin: true),
-  ) ?? false;
+        context: context,
+        barrierColor: Colors.black.withOpacity(0.9), // Darker barrier
+        barrierDismissible: true,
+        builder: (context) => const _CyberAuthDialog(isLogin: true),
+      ) ??
+      false;
 }
 
 Future<bool> showCyberSignup(BuildContext context) async {
   return await showDialog<bool>(
-    context: context,
-    barrierColor: Colors.black.withOpacity(0.9),
-    barrierDismissible: true,
-    builder: (context) => const _CyberAuthDialog(isLogin: false),
-  ) ?? false;
+        context: context,
+        barrierColor: Colors.black.withOpacity(0.9),
+        barrierDismissible: true,
+        builder: (context) => const _CyberAuthDialog(isLogin: false),
+      ) ??
+      false;
 }
 
 class _CyberAuthDialog extends StatefulWidget {
@@ -35,13 +37,15 @@ class _CyberAuthDialog extends StatefulWidget {
   State<_CyberAuthDialog> createState() => _CyberAuthDialogState();
 }
 
-class _CyberAuthDialogState extends State<_CyberAuthDialog> with SingleTickerProviderStateMixin {
+class _CyberAuthDialogState extends State<_CyberAuthDialog>
+    with SingleTickerProviderStateMixin {
   late bool _isLogin;
-  final _emailCtrl = TextEditingController(text: "pilot@safetravel.com"); 
-  final _passCtrl = TextEditingController(text: "secure_access_key_123");
+  final _emailCtrl = TextEditingController(text: "abc@gmail.com");
+  final _passCtrl = TextEditingController(text: "123456");
   final _nameCtrl = TextEditingController(); // For signup
-  
+
   bool _isLoading = false;
+  bool _isPasswordVisible = false;
   String? _error;
 
   @override
@@ -51,8 +55,11 @@ class _CyberAuthDialogState extends State<_CyberAuthDialog> with SingleTickerPro
   }
 
   Future<void> _submit() async {
-    print("CyberAuth: Submit Pressed"); 
-    setState(() { _isLoading = true; _error = null; });
+    print("CyberAuth: Submit Pressed");
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       if (_isLogin) {
         print("CyberAuth: Attempting Login...");
@@ -67,14 +74,17 @@ class _CyberAuthDialogState extends State<_CyberAuthDialog> with SingleTickerPro
           email: _emailCtrl.text.trim(),
           password: _passCtrl.text.trim(),
         );
-        
+
         final user = cred.user;
         if (user != null) {
           // Update Profile
           await user.updateDisplayName(_nameCtrl.text.trim());
-          
+
           // SAVE TO FIRESTORE
-          await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set({
             'uid': user.uid,
             'email': user.email,
             'displayName': _nameCtrl.text.trim(),
@@ -84,9 +94,8 @@ class _CyberAuthDialogState extends State<_CyberAuthDialog> with SingleTickerPro
           });
         }
       }
-      
+
       if (mounted) Navigator.pop(context, true); // Success
-      
     } on FirebaseAuthException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (e) {
@@ -111,11 +120,17 @@ class _CyberAuthDialogState extends State<_CyberAuthDialog> with SingleTickerPro
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFF050505).withOpacity(0.9),
-            border: Border.all(color: _isLogin ? const Color(0xFF00F0FF) : const Color(0xFF8B5CF6)),
+            border: Border.all(
+                color: _isLogin
+                    ? const Color(0xFF00F0FF)
+                    : const Color(0xFF8B5CF6)),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: (_isLogin ? const Color(0xFF00F0FF) : const Color(0xFF8B5CF6)).withOpacity(0.3),
+                color: (_isLogin
+                        ? const Color(0xFF00F0FF)
+                        : const Color(0xFF8B5CF6))
+                    .withOpacity(0.3),
                 blurRadius: 20,
               )
             ],
@@ -131,68 +146,86 @@ class _CyberAuthDialogState extends State<_CyberAuthDialog> with SingleTickerPro
                 GlitchText(
                   text: _isLogin ? 'SECURE LOGIN' : 'NEW ACCOUNT',
                   style: GoogleFonts.syncopate(
-                    fontSize: 24, 
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 2
-                  ),
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 2),
                   interval: const Duration(seconds: 2),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 if (_error != null) ...[
-                   Container(
-                     padding: const EdgeInsets.all(8),
-                     decoration: BoxDecoration(
-                       color: Colors.red.withOpacity(0.1),
-                       border: Border.all(color: Colors.red.withOpacity(0.5)),
-                     ),
-                     child: Text(_error!, style: GoogleFonts.spaceMono(color: Colors.redAccent, fontSize: 12)),
-                   ),
-                   const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      border: Border.all(color: Colors.red.withOpacity(0.5)),
+                    ),
+                    child: Text(_error!,
+                        style: GoogleFonts.spaceMono(
+                            color: Colors.redAccent, fontSize: 12)),
+                  ),
+                  const SizedBox(height: 16),
                 ],
 
                 if (!_isLogin) ...[
                   _buildCyberField('CODENAME', _nameCtrl, Icons.badge),
                   const SizedBox(height: 16),
                 ],
-                
-                _buildCyberField('NET LINK (EMAIL)', _emailCtrl, Icons.alternate_email),
+
+                _buildCyberField(
+                    'NET LINK (EMAIL)', _emailCtrl, Icons.alternate_email),
                 const SizedBox(height: 16),
-                _buildCyberField('ACCESS KEY (PASS)', _passCtrl, Icons.key, obscure: true),
-                
+                _buildCyberField(
+                  'ACCESS KEY (PASS)',
+                  _passCtrl,
+                  Icons.key,
+                  isPassword: true,
+                  isVisible: _isPasswordVisible,
+                  onToggleVisibility: () =>
+                      setState(() => _isPasswordVisible = !_isPasswordVisible),
+                ),
+
                 const SizedBox(height: 32),
-                
-                _isLoading 
-                  ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                  : SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _isLogin ? const Color(0xFF00F0FF) : const Color(0xFF8B5CF6),
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                          elevation: 10,
-                          shadowColor: _isLogin ? const Color(0xFF00F0FF) : const Color(0xFF8B5CF6),
+
+                _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(color: Colors.white))
+                    : SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _isLogin
+                                ? const Color(0xFF00F0FF)
+                                : const Color(0xFF8B5CF6),
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4)),
+                            elevation: 10,
+                            shadowColor: _isLogin
+                                ? const Color(0xFF00F0FF)
+                                : const Color(0xFF8B5CF6),
+                          ),
+                          icon: Icon(_isLogin ? Icons.login : Icons.person_add),
+                          label: Text(
+                            _isLogin ? 'LOGIN' : 'SIGN UP',
+                            style: GoogleFonts.syncopate(
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          onPressed: _submit,
                         ),
-                        icon: Icon(_isLogin ? Icons.login : Icons.person_add),
-                        label: Text(
-                          _isLogin ? 'LOGIN' : 'SIGN UP',
-                          style: GoogleFonts.syncopate(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        onPressed: _submit,
                       ),
-                    ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 TextButton(
                   onPressed: _toggleMode,
                   child: Text(
                     _isLogin ? 'REQUEST NEW IDENTITY >>' : '<< RETURN TO LOGIN',
-                    style: GoogleFonts.spaceMono(color: Colors.white54, fontSize: 12),
+                    style: GoogleFonts.spaceMono(
+                        color: Colors.white54, fontSize: 12),
                   ),
                 ),
               ],
@@ -203,11 +236,17 @@ class _CyberAuthDialogState extends State<_CyberAuthDialog> with SingleTickerPro
     );
   }
 
-  Widget _buildCyberField(String label, TextEditingController ctrl, IconData icon, {bool obscure = false}) {
+  Widget _buildCyberField(
+      String label, TextEditingController ctrl, IconData icon,
+      {bool isPassword = false,
+      bool isVisible = false,
+      VoidCallback? onToggleVisibility}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.spaceMono(color: const Color(0xFF00F0FF), fontSize: 10)),
+        Text(label,
+            style: GoogleFonts.spaceMono(
+                color: const Color(0xFF00F0FF), fontSize: 10)),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
@@ -217,12 +256,22 @@ class _CyberAuthDialogState extends State<_CyberAuthDialog> with SingleTickerPro
           ),
           child: TextField(
             controller: ctrl,
-            obscureText: obscure,
+            obscureText: isPassword && !isVisible,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               prefixIcon: Icon(icon, color: Colors.white54, size: 18),
+              suffixIcon: isPassword
+                  ? IconButton(
+                      icon: Icon(
+                          isVisible ? Icons.visibility : Icons.visibility_off,
+                          color: Colors.white54,
+                          size: 18),
+                      onPressed: onToggleVisibility,
+                    )
+                  : null,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
           ),
         ),
