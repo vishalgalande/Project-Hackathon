@@ -9,10 +9,16 @@ class AppColors {
   static const Color surface = Colors.white;
   static const Color primary = Color(0xFF2196F3);
 
+  // Brand Theme Colors
+  static const Color brandPurple = Color(0xFF7E51C7);
+  static const Color brandLightPurple = Color(0xFFAB94C7);
+  static const Color brandSurface = Color(0xFFFBEAFF);
+  static const Color brandTeal = Color(0xFF64BAAA);
+
   // Zone colors (matching the reference image)
   static const Color dangerZone = Color(0xFFE53935); // Red
   static const Color cautionZone = Color(0xFFFFB300); // Yellow/Amber
-  static const Color safeZone = Color(0xFF43A047); // Green
+  static const Color safeZone = brandTeal; // Updated to Theme Teal
 
   // Cyberpunk accent colors (for GlitchButton widget)
   static const Color cyberCyan = Color(0xFF00FFFF);

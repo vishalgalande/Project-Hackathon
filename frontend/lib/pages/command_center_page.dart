@@ -22,7 +22,6 @@ class CommandCenterPage extends ConsumerStatefulWidget {
 
 class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   final MapController _mapController = MapController();
-  late DraggableScrollableController _sheetController;
   late FocusNode _focusNode; // For keyboard events
   // Center of India (approximately)
   final LatLng _initialCenter = const LatLng(20.5937, 78.9629);
@@ -35,6 +34,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
       8.0; // Show clusters below this zoom
   LatLng? _userLocation; // User's detected location
   bool _locationLoading = true; // Loading state for geolocation
+  bool _isPanelExpanded = false; // Track if bottom panel is expanded
 
   /// Detect the state/region based on map center coordinates
   String _detectState(double lat, double lng) {
@@ -123,7 +123,6 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   @override
   void initState() {
     super.initState();
-    _sheetController = DraggableScrollableController();
     _focusNode = FocusNode();
     _initUserLocation();
   }
@@ -175,7 +174,6 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
 
   @override
   void dispose() {
-    _sheetController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -599,8 +597,33 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                 ),
               ),
 
-            // Bottom Sheet
-            _buildBottomPanel(_getVisibleZones(zones)),
+            // Zones Toggle Button - Bottom Right
+            Positioned(
+              bottom: 24,
+              right: 24,
+              child: FloatingActionButton(
+                onPressed: () {
+                  setState(() => _isPanelExpanded = !_isPanelExpanded);
+                },
+                backgroundColor: AppColors.brandPurple,
+                child: Icon(
+                  _isPanelExpanded ? Icons.close : Icons.layers_rounded,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+
+            // Animated Zones Panel - Right Side
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutCubic,
+              right: 16,
+              // If expanded, bottom is 24 (padding). If collapsed, hide below screen.
+              bottom:
+                  _isPanelExpanded ? 24 : -MediaQuery.of(context).size.height,
+              top: _isPanelExpanded ? 24 : MediaQuery.of(context).size.height,
+              child: _buildZonesOverlay(_getVisibleZones(zones)),
+            ),
           ],
         ),
       ), // Close Scaffold
@@ -777,240 +800,179 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
     context.push('/intel/${zone.id}');
   }
 
-  Widget _buildBottomPanel(List<Zone> zones) {
-    return DraggableScrollableSheet(
-      controller: _sheetController,
-      initialChildSize: 0.15, // Start Visible (Peek)
-      minChildSize: 0.05, // BUT allow hiding it (Option available)
-      maxChildSize: 0.9,
-      snap: true,
-      snapSizes: const [0.05, 0.15, 0.9], // Hidden, Peek, Full
-      builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color:
-                Colors.transparent, // User requested removing white background
-            // No shadow, no border radius needed if transparent
+  Widget _buildZonesOverlay(List<Zone> zones) {
+    return Container(
+      width: 380, // Slightly wider for better card layout
+      // Height defined by parent AnimatedPositioned
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.brandSurface.withOpacity(0.95), // Themed background
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(-4, 4),
+            spreadRadius: 2,
           ),
-          child: Scrollbar(
-            thumbVisibility: true,
-            controller: scrollController,
-            child: ListView(
-              controller: scrollController,
-              padding: EdgeInsets.zero,
-              children: [
-                // Handle & Controls
-                GestureDetector(
-                  onTap: () {
-                    // Smart Toggle
-                    if (_sheetController.size < 0.1) {
-                      _sheetController.animateTo(0.15,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOut); // Unhide
-                    } else if (_sheetController.size > 0.5) {
-                      _sheetController.animateTo(0.15,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOut); // Minimize
-                    } else {
-                      _sheetController.animateTo(0.9,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOut); // Maximize
-                    }
-                  },
-                  child: Container(
-                    color: Colors.transparent, // Hit test target
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Popular Places',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22, // Larger, more prominent title
+                  color: AppColors.brandPurple, // Theme Purple
+                  letterSpacing: -0.5,
+                ),
+              ),
+              // Close/Minimize button
+              Material(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(30),
+                child: InkWell(
+                  onTap: () => setState(() => _isPanelExpanded = false),
+                  borderRadius: BorderRadius.circular(30),
+                  child: const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Icon(Icons.close_rounded, color: Colors.black54),
                   ),
                 ),
-
-                // Expanded Content: Arrows Only
-                Align(
-                  alignment: Alignment.center,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors
-                          .black, // User requested background black ONLY on arrows
-                      borderRadius: BorderRadius.circular(30), // Pill shape
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 8,
-                            offset: const Offset(0, 4)),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize:
-                          MainAxisSize.min, // Wrap content height/width
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Up Arrow
-                        IconButton(
-                          icon: const Icon(Icons.keyboard_arrow_up_rounded,
-                              color: Colors.white), // White Icon
-                          onPressed: () {
-                            if (_sheetController.size < 0.1) {
-                              _sheetController.animateTo(0.15,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOut);
-                            } else {
-                              _sheetController.animateTo(0.9,
-                                  duration: const Duration(milliseconds: 500),
-                                  curve: Curves.elasticOut);
-                            }
-                          },
-                          tooltip: 'Expand',
-                        ),
-                        const SizedBox(width: 16), // Tighter Space
-                        // Down Arrow
-                        IconButton(
-                          icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                              color: Colors.white), // White Icon
-                          onPressed: () {
-                            if (_sheetController.size > 0.5) {
-                              _sheetController.animateTo(0.15,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOut);
-                            } else {
-                              _sheetController.animateTo(0.05,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOut);
-                            }
-                          },
-                          tooltip: 'Minimize',
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                ...zones.map((zone) => Container(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(
-                            0.9), // Semi-transparent for legibility
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black12, blurRadius: 4),
-                        ],
-                      ),
-                      child: InkWell(
-                        onTap: () => _showZoneDetails(zone),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              // Leading icon
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: zone.type.zoneColor.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  zone.type == 'danger'
-                                      ? Icons.warning_amber_rounded
-                                      : zone.type == 'caution'
-                                          ? Icons.priority_high_rounded
-                                          : Icons.verified_user_rounded,
-                                  color: zone.type.zoneColor,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              // Content
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      zone.name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      zone.description,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                    // Warning tags
-                                    if (zone.warnings.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      Wrap(
-                                        spacing: 6,
-                                        runSpacing: 4,
-                                        children: zone.warnings
-                                            .map(
-                                              (warning) => Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 4,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: zone.type.zoneColor
-                                                      .withOpacity(0.15),
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                  border: Border.all(
-                                                    color: zone.type.zoneColor
-                                                        .withOpacity(0.3),
-                                                    width: 1,
-                                                  ),
-                                                ),
-                                                child: Text(
-                                                  warning,
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: zone.type.zoneColor,
-                                                  ),
-                                                ),
-                                              ),
-                                            )
-                                            .toList(),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                              // Trailing icon
-                              const Icon(Icons.chevron_right,
-                                  size: 20, color: Colors.grey),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )),
-
-                const SizedBox(height: 40), // Bottom padding
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${zones.length} locations nearby',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w500,
             ),
           ),
-        );
-      },
+          const SizedBox(height: 20),
+
+          // Scrollable Zone Content
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              itemCount: zones.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                return _buildAestheticPlaceCard(zones[index]);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build aesthetic place card for sidebar
+  Widget _buildAestheticPlaceCard(Zone zone) {
+    // Determine status color/icon
+    final Color statusColor = zone.type.zoneColor;
+    final IconData statusIcon = zone.type == 'danger'
+        ? Icons.warning_amber_rounded
+        : zone.type == 'caution'
+            ? Icons.info_outline_rounded
+            : Icons.check_circle_outline_rounded;
+
+    return InkWell(
+      onTap: () => _showZoneDetails(zone),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border:
+              Border.all(color: AppColors.brandLightPurple.withOpacity(0.3)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Icon Placeholder (Visual aesthetic)
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(statusIcon, color: statusColor, size: 28),
+            ),
+            const SizedBox(width: 16),
+
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    zone.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    zone.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.4,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+
+                  // Status Badge
+                  if (zone.type != 'safe') ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                            color: statusColor.withOpacity(0.2), width: 1),
+                      ),
+                      child: Text(
+                        zone.type.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: statusColor,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
