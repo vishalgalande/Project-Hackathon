@@ -82,7 +82,7 @@ export default function Home() {
           className="mb-16 flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-white/60 hover:text-white transition-colors"
         >
           <Mail className="w-4 h-4" />
-          <a href="mailto:support@strawhats.in">support@strawhats.in</a>
+          <a href="mailto:support@strawhats.live">support@strawhats.live</a>
         </motion.div>
 
         {/* Team Grid */}
