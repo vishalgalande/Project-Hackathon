@@ -19,6 +19,6 @@ flutter doctor -v
 echo "---------------------------------------------------"
 echo "🏗️ Building Flutter Web App (Wasm/CanvasKit)..."
 echo "---------------------------------------------------"
-flutter build web --wasm --release
+flutter build web --wasm --release --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY"
 
 echo "✅ Build Complete!"
