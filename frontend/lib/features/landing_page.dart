@@ -144,7 +144,15 @@ class _LandingPageState extends State<LandingPage> {
   Widget _buildNavBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+<<<<<<< HEAD
       color: Colors.transparent, // Explicit transparent
+=======
+      decoration: BoxDecoration(
+        color: const Color(0xFF050505).withOpacity(0.5),
+        border:
+            Border(bottom: BorderSide(color: Colors.white.withOpacity(0.1))),
+      ),
+>>>>>>> 75a58d25029ff6e3b2c043369f8844950a47e7e5
       child: Row(
         children: [
           GlitchText(
@@ -155,6 +163,7 @@ class _LandingPageState extends State<LandingPage> {
           const Spacer(),
           
           if (_user == null)
+<<<<<<< HEAD
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -173,6 +182,20 @@ class _LandingPageState extends State<LandingPage> {
                 tooltip: 'LOGIN',
                 onPressed: () => showCyberLogin(context),
               ),
+=======
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () => showLoginDialog(context),
+                  child: Text('LOG IN',
+                      style: GoogleFonts.inter(
+                          color: Colors.white70, letterSpacing: 1.0)),
+                ),
+                const SizedBox(width: 16),
+                LiquidButton(
+                    text: 'SIGN UP', onTap: () => showSignupDialog(context)),
+              ],
+>>>>>>> 75a58d25029ff6e3b2c043369f8844950a47e7e5
             )
           else
             Row(
@@ -212,6 +235,7 @@ class _LandingPageState extends State<LandingPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
+<<<<<<< HEAD
              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
              decoration: BoxDecoration(
                color: Colors.white.withOpacity(0.05),
@@ -250,13 +274,59 @@ class _LandingPageState extends State<LandingPage> {
                  duration: const Duration(milliseconds: 2000),
                  style: GoogleFonts.syncopate(fontSize: 56, fontWeight: FontWeight.w900, color: const Color(0xFF8B5CF6), height: 1.0, letterSpacing: -2.0, shadows: [BoxShadow(color: const Color(0xFF8B5CF6).withOpacity(0.6), blurRadius: 40)]),
               ),
+=======
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(50),
+              border:
+                  Border.all(color: const Color(0xFF00F0FF).withOpacity(0.3)),
+            ),
+            child: Text(
+              'SYSTEM ONLINE • V2.5.0',
+              style: GoogleFonts.spaceMono(
+                  color: const Color(0xFF00F0FF),
+                  fontSize: 10,
+                  letterSpacing: 2),
+            ),
+          ).animate().fadeIn(),
+          const SizedBox(height: 32),
+
+          // MAIN GLITCH TITLE
+          GlitchText(
+            text: 'NAVIGATE INDIA',
+            interval: const Duration(seconds: 4),
+            style: GoogleFonts.syncopate(
+              fontSize: 56,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              height: 1.0,
+              letterSpacing: -2.0,
             ),
           ),
-          
+          GlitchText(
+            text: 'SAFELY',
+            interval: const Duration(seconds: 3),
+            style: GoogleFonts.syncopate(
+              fontSize: 56,
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF8B5CF6),
+              height: 1.0,
+              letterSpacing: -2.0,
+              shadows: [
+                BoxShadow(
+                    color: const Color(0xFF8B5CF6).withOpacity(0.6),
+                    blurRadius: 40)
+              ],
+>>>>>>> 75a58d25029ff6e3b2c043369f8844950a47e7e5
+            ),
+          ),
+
           const SizedBox(height: 32),
           Text(
             'Real-time crowd-sourced safety zones.\nExplore the world with an invisible shield.',
             textAlign: TextAlign.center,
+<<<<<<< HEAD
             style: GoogleFonts.inter(fontSize: 16, color: Colors.white60, height: 1.6),
           ).animate().fadeIn(delay: 1500.ms),
           
@@ -278,6 +348,50 @@ class _LandingPageState extends State<LandingPage> {
                 distance: 20, 
                 child: MouseRegion(cursor: SystemMouseCursors.click, child: GestureDetector(onTap: () => context.go('/tracker'), child: Container(padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16), decoration: BoxDecoration(border: Border.all(color: Colors.white24), borderRadius: BorderRadius.circular(8)), child: Text('TRACK TRANSIT', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1))))),
               ).animate().scale(delay: 2000.ms, curve: Curves.easeOutBack),
+=======
+            style: GoogleFonts.inter(
+                fontSize: 16, color: Colors.white60, height: 1.6),
+          ).animate().fadeIn(delay: 600.ms),
+          const SizedBox(height: 56),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              LiquidButton(
+                text: 'EXPLORE MAP',
+                icon: Icons.map,
+                onTap: () {
+                  Navigator.of(context).push(PageRouteBuilder(
+                    pageBuilder: (context, _, __) => WarpTransition(
+                      onFinished: () {
+                        context.go('/geofencing',
+                            extra: {'triggerAnimation': true});
+                      },
+                    ),
+                    opaque: false,
+                  ));
+                },
+              ),
+              const SizedBox(width: 24),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => context.go('/tracker'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.white24),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('TRACK TRANSIT',
+                        style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1)),
+                  ),
+                ),
+              ),
+>>>>>>> 75a58d25029ff6e3b2c043369f8844950a47e7e5
             ],
           ),
         ],
@@ -290,20 +404,68 @@ class _LandingPageState extends State<LandingPage> {
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 50),
       child: Column(
         children: [
+<<<<<<< HEAD
            Text('PREMIUM UTILITY', style: GoogleFonts.spaceMono(color: Colors.white24, fontSize: 12, letterSpacing: 4)),
            const SizedBox(height: 16),
            Text('ADVANCED SYSTEMS', style: GoogleFonts.syncopate(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
            const SizedBox(height: 64),
            Wrap(
+=======
+          Text('PREMIUM UTILITY',
+                  style: GoogleFonts.spaceMono(
+                      color: Colors.white24, fontSize: 12, letterSpacing: 4))
+              .animate()
+              .fadeIn(),
+          const SizedBox(height: 16),
+          Text('ADVANCED SYSTEMS',
+                  style: GoogleFonts.syncopate(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold))
+              .animate()
+              .fadeIn(),
+          const SizedBox(height: 64),
+          Wrap(
+>>>>>>> 75a58d25029ff6e3b2c043369f8844950a47e7e5
             spacing: 32,
             runSpacing: 32,
             alignment: WrapAlignment.center,
             children: [
+<<<<<<< HEAD
                _buildTiltFeature(title: 'SAFETY ZONES', desc: 'Live heatmaps of safe and danger zones.', icon: Icons.shield_moon, color: const Color(0xFF00F0FF), onTap: () => context.go('/geofencing'), label: 'LIVE'),
                _buildTiltFeature(title: 'TRANSIT TRACKER', desc: 'AI-predicted arrivals for buses/trains.', icon: Icons.directions_transit_filled, color: const Color(0xFF8B5CF6), onTap: () => context.go('/tracker'), label: 'BETA'),
                _buildTiltFeature(title: 'EMERGENCY SOS', desc: 'Instant beacon to authorities.', icon: Icons.emergency_share, color: Colors.redAccent, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SosPage())), label: 'ACTIVE'),
+=======
+              _buildTiltFeature(
+                title: 'SAFETY ZONES',
+                desc:
+                    'Live heatmaps of safe and danger zones across your city.',
+                icon: Icons.shield_moon,
+                color: const Color(0xFF00F0FF),
+                onTap: () => context.go('/geofencing'),
+                label: 'LIVE',
+              ),
+              _buildTiltFeature(
+                title: 'TRANSIT TRACKER',
+                desc:
+                    'AI-predicted arrivals for buses and trains in real-time.',
+                icon: Icons.directions_transit_filled,
+                color: const Color(0xFF8B5CF6),
+                onTap: () => context.go('/tracker'),
+                label: 'BETA',
+              ),
+              _buildTiltFeature(
+                title: 'EMERGENCY SOS',
+                desc: 'Instant beacon to authorities and trusted contacts.',
+                icon: Icons.emergency_share,
+                color: Colors.redAccent,
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const SosPage())),
+                label: 'ACTIVE',
+              ),
+>>>>>>> 75a58d25029ff6e3b2c043369f8844950a47e7e5
             ],
-           ),
+          ),
         ],
       ),
     );
@@ -313,6 +475,7 @@ class _LandingPageState extends State<LandingPage> {
     return SizedBox(
       width: 350,
       height: 350,
+<<<<<<< HEAD
       child: MagneticControl(
         distance: 15,
         child: TiltCard(
@@ -330,6 +493,51 @@ class _LandingPageState extends State<LandingPage> {
                Row(children: [Text('ACCESS TERMINAL', style: GoogleFonts.spaceMono(fontSize: 10, color: color)), const SizedBox(width: 8), Icon(Icons.arrow_forward_ios, color: color, size: 10)]),
             ],
           ),
+=======
+      child: TiltCard(
+        baseColor: color,
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(icon, color: Colors.white, size: 32),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: color.withOpacity(0.3)),
+                  ),
+                  child: Text(label,
+                      style: GoogleFonts.spaceMono(fontSize: 10, color: color)),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Text(title,
+                style: GoogleFonts.syncopate(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
+            const SizedBox(height: 12),
+            Text(desc,
+                style: GoogleFonts.inter(
+                    fontSize: 14, color: Colors.white60, height: 1.5)),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Text('ACCESS TERMINAL',
+                    style: GoogleFonts.spaceMono(fontSize: 10, color: color)),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_forward_ios, color: color, size: 10),
+              ],
+            ),
+          ],
+>>>>>>> 75a58d25029ff6e3b2c043369f8844950a47e7e5
         ),
       ),
     );
@@ -339,6 +547,7 @@ class _LandingPageState extends State<LandingPage> {
     return Container(
       padding: const EdgeInsets.all(40),
       alignment: Alignment.center,
+<<<<<<< HEAD
       child: Column(
         children: [
           Text('SAFETRAVEL SYSTEMS • 2026', style: GoogleFonts.spaceMono(color: Colors.white10, fontSize: 10, letterSpacing: 2)),
@@ -348,6 +557,12 @@ class _LandingPageState extends State<LandingPage> {
             child: Text('ABOUT US', style: GoogleFonts.inter(color: Colors.blueGrey, fontSize: 12, fontWeight: FontWeight.bold)),
           ),
         ],
+=======
+      child: Text(
+        'SAFETRAVEL SYSTEMS • 2026',
+        style: GoogleFonts.spaceMono(
+            color: Colors.white10, fontSize: 10, letterSpacing: 2),
+>>>>>>> 75a58d25029ff6e3b2c043369f8844950a47e7e5
       ),
     );
   }
