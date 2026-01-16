@@ -25,7 +25,7 @@ function BentoCard({ title, description, icon, animation, className = "", delay 
         glass-strong p-6 md:p-8
         group cursor-pointer
         transition-all duration-500
-        hover:glow-cyan
+        hover:glow-primary
         ${className}
       `}
         >
@@ -194,7 +194,7 @@ function BlockchainAnimation() {
                     {/* Connection line */}
                     {i < 2 && (
                         <motion.div
-                            className="absolute top-1/2 -right-3 w-3 h-0.5 bg-cyber-cyan/50"
+                            className="absolute top-1/2 -right-3 w-3 h-0.5 bg-primary/50"
                             animate={{
                                 opacity: [0.3, 1, 0.3],
                                 backgroundColor: ["rgba(99, 102, 241, 0.3)", "rgba(99, 102, 241, 1)", "rgba(99, 102, 241, 0.3)"],

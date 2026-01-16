@@ -21,8 +21,8 @@ export default function GlitchButton({ children, onClick, className = "" }: Glit
             onMouseLeave={() => setIsHovered(false)}
             className={`
         relative px-8 py-4 overflow-hidden
-        bg-transparent border-2 border-primary
-        text-primary font-bold uppercase tracking-widest
+        bg-transparent border-2 border-cyber-cyan
+        text-cyber-cyan font-bold uppercase tracking-widest
         transition-all duration-300 cursor-pointer
         group ${className}
       `}
@@ -31,7 +31,7 @@ export default function GlitchButton({ children, onClick, className = "" }: Glit
         >
             {/* Background fill on hover */}
             <motion.div
-                className="absolute inset-0 bg-primary"
+                className="absolute inset-0 bg-cyber-cyan"
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: isHovered ? 1 : 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
@@ -41,7 +41,7 @@ export default function GlitchButton({ children, onClick, className = "" }: Glit
             {/* Main text */}
             <span className={`
         relative z-10 text-sm transition-colors duration-300
-        ${isHovered ? "text-void-black" : "text-primary"}
+        ${isHovered ? "text-void-black" : "text-cyber-cyan"}
       `}>
                 {children}
             </span>
@@ -60,7 +60,7 @@ export default function GlitchButton({ children, onClick, className = "" }: Glit
                         {children}
                     </span>
                     <span
-                        className="absolute inset-0 flex items-center justify-center text-sm font-bold uppercase tracking-widest text-primary opacity-70 z-20"
+                        className="absolute inset-0 flex items-center justify-center text-sm font-bold uppercase tracking-widest text-cyber-cyan opacity-70 z-20"
                         style={{
                             clipPath: "inset(60% 0 10% 0)",
                             transform: "translate(2px, -1px)",

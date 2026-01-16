@@ -5,21 +5,19 @@
    ======================================== */
 
 @theme inline {
-  /* Design Tokens - Matching Flutter Theme */
-  --color-void-black: #0a0a0f;
-  --color-void-dark: #141419;
-  --color-void-gray: #1e1e26;
-  --color-accent: #a855f7;
-  /* Purple */
-  --color-primary: #6366f1;
-  /* Indigo */
+  /* Design Tokens */
+  --color-void-black: #050505;
+  --color-void-dark: #0a0a0a;
+  --color-void-gray: #1a1a1a;
+  --color-signal-red: #FF2E2E;
+  --color-cyber-cyan: #00F0FF;
   --color-glass-white: rgba(255, 255, 255, 0.05);
   --color-glass-border: rgba(255, 255, 255, 0.1);
-
+  
   /* Typography Scale */
   --font-display: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-
+  
   /* Animations */
   --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -47,8 +45,8 @@ body {
 
 /* Selection */
 ::selection {
-  background: var(--color-primary);
-  color: white;
+  background: var(--color-cyber-cyan);
+  color: var(--color-void-black);
 }
 
 /* ========================================
@@ -98,32 +96,32 @@ body {
    Glow Effects
    ======================================== */
 
-.glow-primary {
-  box-shadow:
-    0 0 20px rgba(99, 102, 241, 0.3),
-    0 0 40px rgba(99, 102, 241, 0.15),
-    inset 0 0 20px rgba(99, 102, 241, 0.05);
+.glow-cyan {
+  box-shadow: 
+    0 0 20px rgba(0, 240, 255, 0.3),
+    0 0 40px rgba(0, 240, 255, 0.15),
+    inset 0 0 20px rgba(0, 240, 255, 0.05);
 }
 
-.glow-accent {
-  box-shadow:
-    0 0 20px rgba(168, 85, 247, 0.3),
-    0 0 40px rgba(168, 85, 247, 0.15),
-    inset 0 0 20px rgba(168, 85, 247, 0.05);
+.glow-red {
+  box-shadow: 
+    0 0 20px rgba(255, 46, 46, 0.3),
+    0 0 40px rgba(255, 46, 46, 0.15),
+    inset 0 0 20px rgba(255, 46, 46, 0.05);
 }
 
-.text-glow-primary {
-  text-shadow:
-    0 0 10px rgba(99, 102, 241, 0.8),
-    0 0 20px rgba(99, 102, 241, 0.5),
-    0 0 40px rgba(99, 102, 241, 0.3);
+.text-glow-cyan {
+  text-shadow: 
+    0 0 10px rgba(0, 240, 255, 0.8),
+    0 0 20px rgba(0, 240, 255, 0.5),
+    0 0 40px rgba(0, 240, 255, 0.3);
 }
 
-.text-glow-accent {
-  text-shadow:
-    0 0 10px rgba(168, 85, 247, 0.8),
-    0 0 20px rgba(168, 85, 247, 0.5),
-    0 0 40px rgba(168, 85, 247, 0.3);
+.text-glow-red {
+  text-shadow: 
+    0 0 10px rgba(255, 46, 46, 0.8),
+    0 0 20px rgba(255, 46, 46, 0.5),
+    0 0 40px rgba(255, 46, 46, 0.3);
 }
 
 /* ========================================
@@ -131,13 +129,8 @@ body {
    ======================================== */
 
 @keyframes marquee {
-  0% {
-    transform: translateX(0);
-  }
-
-  100% {
-    transform: translateX(-50%);
-  }
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .animate-marquee {
@@ -149,16 +142,13 @@ body {
    ======================================== */
 
 @keyframes pulse-glow {
-
-  0%,
-  100% {
+  0%, 100% { 
     opacity: 1;
-    filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.6));
+    filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.6));
   }
-
-  50% {
+  50% { 
     opacity: 0.7;
-    filter: drop-shadow(0 0 40px rgba(99, 102, 241, 0.9));
+    filter: drop-shadow(0 0 40px rgba(0, 240, 255, 0.9));
   }
 }
 
@@ -167,13 +157,8 @@ body {
 }
 
 @keyframes radar-sweep {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .animate-radar {
@@ -185,29 +170,22 @@ body {
    ======================================== */
 
 @keyframes glitch {
-
-  0%,
-  90%,
-  100% {
+  0%, 90%, 100% {
     clip-path: inset(0 0 0 0);
     transform: translate(0);
   }
-
   92% {
     clip-path: inset(40% 0 30% 0);
     transform: translate(-4px, 2px);
   }
-
   94% {
     clip-path: inset(80% 0 5% 0);
     transform: translate(4px, -2px);
   }
-
   96% {
     clip-path: inset(10% 0 60% 0);
     transform: translate(-2px, 4px);
   }
-
   98% {
     clip-path: inset(50% 0 20% 0);
     transform: translate(2px, -4px);
@@ -226,11 +204,13 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(0deg,
-      rgba(0, 0, 0, 0.1) 0px,
-      rgba(0, 0, 0, 0.1) 1px,
-      transparent 1px,
-      transparent 2px);
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.1) 0px,
+    rgba(0, 0, 0, 0.1) 1px,
+    transparent 1px,
+    transparent 2px
+  );
   pointer-events: none;
   opacity: 0.3;
 }
@@ -240,9 +220,9 @@ body {
    ======================================== */
 
 .grid-bg {
-  background-image:
-    linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
   background-size: 50px 50px;
 }
 
@@ -259,10 +239,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-primary);
+  background: var(--color-cyber-cyan);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.8);
+  background: rgba(0, 240, 255, 0.8);
 }

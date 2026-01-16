@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'auth/auth_dialogs.dart';
 import 'chatbot/chat_button.dart';
 import 'sos/sos_page.dart';
+import 'transitions/warp_transition.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -509,8 +510,21 @@ class _LandingPageState extends State<LandingPage> {
                         ? (constraints.maxWidth - 24) / 2
                         : constraints.maxWidth,
                     onTap: () {
-                      context
-                          .go('/geofencing', extra: {'triggerAnimation': true});
+                      Navigator.of(context).push(
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) =>
+                              WarpTransition(
+                            onFinished: () {
+                              context.go('/geofencing', extra: {'triggerAnimation': true});
+                            },
+                          ),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                            return FadeTransition(opacity: animation, child: child);
+                          },
+                          opaque: false, // Ensure it overlays smoothly
+                        ),
+                      );
                     },
                   ),
                   _FeatureCard(

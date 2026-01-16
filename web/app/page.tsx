@@ -35,11 +35,11 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="flex items-center justify-center gap-2 mb-6"
           >
-            <span className="w-8 h-[1px] bg-primary" />
-            <span className="text-mono text-primary text-xs tracking-[0.3em] uppercase">
+            <span className="w-8 h-[1px] bg-cyber-cyan" />
+            <span className="text-mono text-cyber-cyan text-xs tracking-[0.3em] uppercase">
               Smart Tourist Safety System
             </span>
-            <span className="w-8 h-[1px] bg-primary" />
+            <span className="w-8 h-[1px] bg-cyber-cyan" />
           </motion.div>
 
           {/* Main headline */}
@@ -50,7 +50,7 @@ export default function Home() {
             className="heading-hero text-white mb-4"
           >
             <span className="block">Invisible</span>
-            <span className="block text-primary text-glow-primary">Shield.</span>
+            <span className="block text-cyber-cyan text-glow-cyan">Shield.</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -71,7 +71,7 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.8 }}
           >
             <MagneticWrapper strength={0.2}>
-              <GlitchButton onClick={() => window.location.href = '/geofencing'}>
+              <GlitchButton onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}>
                 Initialize Tracking
               </GlitchButton>
             </MagneticWrapper>
@@ -95,10 +95,10 @@ export default function Home() {
         </div>
 
         {/* Corner decorations */}
-        <div className="absolute top-8 left-8 w-16 h-16 border-t border-l border-primary/30" />
-        <div className="absolute top-8 right-8 w-16 h-16 border-t border-r border-primary/30" />
-        <div className="absolute bottom-8 left-8 w-16 h-16 border-b border-l border-primary/30" />
-        <div className="absolute bottom-8 right-8 w-16 h-16 border-b border-r border-primary/30" />
+        <div className="absolute top-8 left-8 w-16 h-16 border-t border-l border-cyber-cyan/30" />
+        <div className="absolute top-8 right-8 w-16 h-16 border-t border-r border-cyber-cyan/30" />
+        <div className="absolute bottom-8 left-8 w-16 h-16 border-b border-l border-cyber-cyan/30" />
+        <div className="absolute bottom-8 right-8 w-16 h-16 border-b border-r border-cyber-cyan/30" />
 
         {/* Status indicators */}
         <motion.div
@@ -113,10 +113,10 @@ export default function Home() {
             { icon: <Lock className="w-4 h-4" />, label: "SEC", status: "MAX" },
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-3 text-mono text-xs">
-              <div className="text-primary">{item.icon}</div>
+              <div className="text-cyber-cyan">{item.icon}</div>
               <div>
                 <div className="text-white/40">{item.label}</div>
-                <div className="text-primary">{item.status}</div>
+                <div className="text-cyber-cyan">{item.status}</div>
               </div>
             </div>
           ))}
@@ -130,8 +130,8 @@ export default function Home() {
           className="absolute right-8 top-1/2 -translate-y-1/2 hidden lg:block text-mono text-xs text-right"
         >
           <div className="text-white/40 mb-1">COORDINATES</div>
-          <div className="text-primary">26.9124° N</div>
-          <div className="text-primary">75.7873° E</div>
+          <div className="text-cyber-cyan">26.9124° N</div>
+          <div className="text-cyber-cyan">75.7873° E</div>
           <div className="text-white/20 mt-2 text-[10px]">JAIPUR, INDIA</div>
         </motion.div>
       </section>
@@ -171,7 +171,7 @@ export default function Home() {
                 transition={{ duration: 0.6, delay: i * 0.1 }}
                 className="text-center"
               >
-                <div className="text-4xl md:text-5xl font-bold text-primary text-glow-primary">
+                <div className="text-4xl md:text-5xl font-bold text-cyber-cyan text-glow-cyan">
                   {stat.value}
                   <span className="text-xl">{stat.suffix}</span>
                 </div>
@@ -188,20 +188,20 @@ export default function Home() {
       <footer className="py-12 px-4 md:px-8 lg:px-16 border-t border-glass-border">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <Globe className="w-6 h-6 text-primary" />
+            <Globe className="w-6 h-6 text-cyber-cyan" />
             <span className="text-xl font-bold">
-              Safe<span className="text-primary">Zone</span>
+              Safe<span className="text-cyber-cyan">Zone</span>
             </span>
           </div>
 
           <div className="text-mono text-xs text-white/40 text-center">
             © 2026 SafeZone Systems. All rights reserved.
             <br />
-            <span className="text-primary/50">HACKATHON PROJECT</span>
+            <span className="text-cyber-cyan/50">HACKATHON PROJECT</span>
           </div>
 
           <div className="flex items-center gap-2 text-mono text-xs">
-            <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+            <span className="w-2 h-2 bg-cyber-cyan rounded-full animate-pulse" />
             <span className="text-white/50">SYSTEM ONLINE</span>
           </div>
         </div>

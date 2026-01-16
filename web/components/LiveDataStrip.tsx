@@ -17,13 +17,14 @@ export default function LiveDataStrip() {
     const content = statusItems.map((item, index) => (
         <span key={index} className="inline-flex items-center gap-2 mx-8">
             <span className={`
-                ${item.type === "safe" ? "bg-primary" :
+        w-2 h-2 rounded-full animate-pulse
+        ${item.type === "safe" ? "bg-cyber-cyan" :
                     item.type === "danger" ? "bg-signal-red" : "bg-white/50"}
       `} />
             <span className="text-white/60 uppercase">{item.location}</span>
             <span className={`
         font-bold uppercase
-        ${item.type === "safe" ? "text-primary" :
+        ${item.type === "safe" ? "text-cyber-cyan" :
                     item.type === "danger" ? "text-signal-red" : "text-white"}
       `}>
                 [{item.status}]
