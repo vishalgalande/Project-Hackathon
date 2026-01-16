@@ -58,9 +58,7 @@ def get_excluded_vehicles():
     Returns list of vehicle IDs that should be excluded/avoided.
     Filters out old reports.
     """
-    Returns list of vehicle IDs that should be excluded/avoided.
-    Filters out old reports (older than 15 mins).
-    """
+
     if not firebase.db:
         return []
 

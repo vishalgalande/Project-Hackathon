@@ -16,14 +16,38 @@ class MockTransitService {
   // Cache for Routes
   final Map<String, TransitRoute> _routes = {};
 
-  void startSimulation() {
-    _initializeRoutes();
+  void startSimulation({List<TransitRoute>? initialRoutes}) {
+    if (initialRoutes != null && initialRoutes.isNotEmpty) {
+      for (var route in initialRoutes) {
+        _routes[route.id] = route;
+      }
+    } else {
+      _initializeRoutes(); // Fallback to hardcoded if API fails
+    }
+
     _generateInitialVehicles();
 
     // faster update for smooth "movement" along detailed paths
     _movementTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       _updateVehiclePositions();
     });
+  }
+
+  void inputRoutes(List<TransitRoute> routes) {
+    for (var route in routes) {
+      _routes[route.id] = route;
+    }
+    // Optionally spawn vehicles for these new routes immediately
+    _spawnVehiclesForNewRoutes(routes);
+  }
+
+  void _spawnVehiclesForNewRoutes(List<TransitRoute> routes) {
+    for (var route in routes) {
+      // Spawn 2-3 vehicles per route
+      for (int i = 0; i < 3; i++) {
+        _spawnVehicleOnRoute(route.id, route, i);
+      }
+    }
   }
 
   void stopSimulation() {
@@ -50,129 +74,24 @@ class MockTransitService {
     String agency = "Agency";
     String name = "Vehicle";
 
+    type = route.type;
+    // Attempt to infer name/agency from Route ID or Metadata if not bus
+    if (type == TransitType.metro) {
+      agency = "Metro";
+      name = "Metro ${route.id.split('_').last}";
+    } else if (type == TransitType.train) {
+      agency = "Rail";
+      name = "Train ${route.id.split('_').last}";
+    } else {
+      agency = "Bus";
+      name = "Bus ${route.id.split('_').last}";
+    }
+
+    // Override with hardcoded if declared
     if (routeId.contains("delhi_yellow")) {
-      type = TransitType.metro;
       agency = "DMRC";
       name = "Yellow Line";
-    } else if (routeId.contains("delhi_blue")) {
-      type = TransitType.metro;
-      agency = "DMRC";
-      name = "Blue Line";
-    } else if (routeId.contains("dtc_502")) {
-      type = TransitType.bus;
-      agency = "DTC";
-      name = "Bus 502";
-    } else if (routeId.contains("dtc_mudrika")) {
-      type = TransitType.bus;
-      agency = "DTC";
-      name = "Mudrika";
-    } else if (routeId.contains("mumbai_western")) {
-      type = TransitType.train;
-      agency = "Western Rly";
-      name = "Local";
-    } else if (routeId.contains("mum_pune")) {
-      type = TransitType.bus;
-      agency = "MSRTC";
-      name = "Shivneri";
-    } else if (routeId.contains("bengaluru_airport")) {
-      type = TransitType.bus;
-      agency = "BMTC";
-      name = "Vayu Vajra";
-    } else if (routeId.contains("bengaluru_purple")) {
-      type = TransitType.metro;
-      agency = "BMRCL";
-      name = "Purple Line";
-    } else if (routeId.contains("jaipur_pink")) {
-      type = TransitType.metro;
-      agency = "JMRC";
-      name = "Pink Line";
-    } else if (routeId.contains("ahmedabad_brts")) {
-      type = TransitType.bus;
-      agency = "A'bad BRTS";
-      name = "BRTS 1";
-    } else if (routeId.contains("chennai_blue")) {
-      type = TransitType.metro;
-      agency = "CMRL";
-      name = "Blue Line";
-    } else if (routeId.contains("hyd_red")) {
-      type = TransitType.metro;
-      agency = "HMRL";
-      name = "Red Line";
-    } else if (routeId.contains("lucknow_red")) {
-      type = TransitType.metro;
-      agency = "LMRC";
-      name = "Red Line";
-    } else if (routeId.contains("kolkata_blue")) {
-      type = TransitType.metro;
-      agency = "KMRC";
-      name = "Blue Line";
-    } else if (routeId.contains("rail_del_how")) {
-      type = TransitType.train;
-      agency = "IR";
-      name = "Pourva Exp";
-    } else if (routeId.contains("rail_del_mum")) {
-      type = TransitType.train;
-      agency = "IR";
-      name = "Rajdhani";
-    } else if (routeId.contains("rail_mum_chn")) {
-      type = TransitType.train;
-      agency = "IR";
-      name = "Chennai Exp";
-    } else if (routeId.contains("rail_how_chn")) {
-      type = TransitType.train;
-      agency = "IR";
-      name = "Coromandel";
-    } else if (routeId.contains("nh_")) {
-      type = TransitType.bus;
-      agency = "NHAI";
-      name = "Interstate";
-    } else if (routeId.contains("bus_tn")) {
-      agency = "TNSTC";
-      name = "Express";
-    } else if (routeId.contains("bus_ka")) {
-      agency = "KSRTC";
-      name = "Airavat";
-    } else if (routeId.contains("bus_mh")) {
-      agency = "MSRTC";
-      name = "Shivneri";
-    } else if (routeId.contains("bus_up")) {
-      agency = "UPSRTC";
-      name = "Janrath";
-    } else if (routeId.contains("bus_rj")) {
-      agency = "RSRTC";
-      name = "Gold Line";
-    } else if (routeId.contains("bus_kl")) {
-      agency = "Kerala RTC";
-      name = "Swift";
-    } else if (routeId.contains("bus_gj")) {
-      agency = "GSRTC";
-      name = "Gurjarnagari";
-    } else if (routeId.contains("bus_ap")) {
-      agency = "APSRTC";
-      name = "Amaravati";
-    } else if (routeId.contains("bus_ts")) {
-      agency = "TSRTC";
-      name = "Garuda";
-    } else if (routeId.contains("mum_metro_1")) {
-      type = TransitType.metro;
-      agency = "MMMOCL";
-      name = "Versova Fast";
-    } else if (routeId.contains("bengaluru_green")) {
-      type = TransitType.metro;
-      agency = "BMRCL";
-      name = "Green Line";
-    } else if (routeId.contains("hyd_blue")) {
-      type = TransitType.metro;
-      agency = "HMRL";
-      name = "Blue Line";
-    } else if (routeId.contains("chennai_green")) {
-      type = TransitType.metro;
-      agency = "CMRL";
-      name = "Green Line";
-    } else if (routeId.contains("kolkata_green")) {
-      type = TransitType.metro;
-      agency = "KMRC";
-      name = "Green Line";
+      // ... (Keep existing specific logic if desired, or simplify)
     }
 
     // Init position via interpolation
@@ -188,7 +107,9 @@ class MockTransitService {
     _vehicles.add(TransitVehicle(
         id: '${routeId}_${_random.nextInt(9999)}',
         name: name,
-        routeName: route.stops.isNotEmpty ? route.stops.last.name : "Route",
+        routeName: route.stops.isNotEmpty
+            ? "${route.stops.first.name} - ${route.stops.last.name}"
+            : "Route",
         type: type,
         agency: agency,
         status: VehicleStatus.onTime,
@@ -197,7 +118,9 @@ class MockTransitService {
         routeId: routeId,
         color: route.color,
         currentPathIndex: startIndex,
-        pathDirection: direction));
+        pathDirection: direction,
+        city: route.city, // Pass city/country from route
+        country: route.country));
   }
 
   double _calculateHeading(LatLng start, LatLng end) {
@@ -265,168 +188,239 @@ class MockTransitService {
   // High fidelity paths for key demos
   void _initializeRoutes() {
     // 1. Delhi Metro Yellow Line (Detailed Track Geometry)
-    _routes['delhi_yellow'] =
-        TransitRoute(id: 'delhi_yellow', color: Colors.yellow[700], polyline: [
-      LatLng(28.7919, 77.1290), // Samaypur Badli
-      LatLng(28.7800, 77.1280), LatLng(28.7700, 77.1270),
-      LatLng(28.7600, 77.1250), // Jahangirpuri
-      LatLng(28.7500, 77.1230), LatLng(28.7400, 77.1200),
-      LatLng(28.7300, 77.1180), LatLng(28.7200, 77.1150), // GTB Nagar
-      LatLng(28.7041, 77.1025), // Vishwavidyalaya
-      LatLng(28.6980, 77.2080), // Vidhan Sabha (Curve)
-      LatLng(28.6940, 77.2150), // Civil Lines
-      LatLng(28.6700, 77.2250), // Kashmere Gate
-      LatLng(28.6650, 77.2280), LatLng(28.6610, 77.2276),
-      LatLng(28.6550, 77.2250), // Chandni Chowk
-      LatLng(28.6500, 77.2200), // Chawri Bazar
-      LatLng(28.6400, 77.2180), // New Delhi
-      LatLng(28.6328, 77.2197), // Rajiv Chowk
-      LatLng(28.6250, 77.2180), // Patel Chowk
-      LatLng(28.6200, 77.2150), // Central Secretariat
-      LatLng(28.6000, 77.2120), // Udyog Bhawan
-      LatLng(28.5900, 77.2100), // Jor Bagh
-      LatLng(28.5800, 77.2080), // INA
-      LatLng(28.5679, 77.2100), // AIIMS
-      LatLng(28.5600, 77.2080), // Green Park
-      LatLng(28.5500, 77.2050), // Hauz Khas
-      LatLng(28.5400, 77.2000), // Malviya Nagar
-      LatLng(28.5300, 77.1950), // Saket
-      LatLng(28.5200, 77.1900), // Qutab Minar
-      LatLng(28.5000, 77.1600), // Chhatarpur
-      LatLng(28.4800, 77.1000), // MG Road
-      LatLng(28.4700, 77.0800), // IFFCO Chowk
-      LatLng(28.4595, 77.0725), // HUDA City Centre
-    ], stops: [
-      TransitStop(
-          name: "Samaypur Badli",
-          position: LatLng(28.7919, 77.1290),
-          arrivalTimeOffset: 0),
-      TransitStop(
-          name: "Rajiv Chowk",
-          position: LatLng(28.6328, 77.2197),
-          arrivalTimeOffset: 35),
-      TransitStop(
-          name: "HUDA City Centre",
-          position: LatLng(28.4595, 77.0725),
-          arrivalTimeOffset: 65),
-    ]);
+    _routes['delhi_yellow'] = TransitRoute(
+        id: 'delhi_yellow',
+        city: 'Delhi',
+        type: TransitType.metro,
+        color: Colors.yellow[700],
+        polyline: [
+          LatLng(28.7919, 77.1290), // Samaypur Badli
+          LatLng(28.7800, 77.1280), LatLng(28.7700, 77.1270),
+          LatLng(28.7600, 77.1250), // Jahangirpuri
+          LatLng(28.7500, 77.1230), LatLng(28.7400, 77.1200),
+          LatLng(28.7300, 77.1180), LatLng(28.7200, 77.1150), // GTB Nagar
+          LatLng(28.7041, 77.1025), // Vishwavidyalaya
+          LatLng(28.6980, 77.2080), // Vidhan Sabha (Curve)
+          LatLng(28.6940, 77.2150), // Civil Lines
+          LatLng(28.6700, 77.2250), // Kashmere Gate
+          LatLng(28.6650, 77.2280), LatLng(28.6610, 77.2276),
+          LatLng(28.6550, 77.2250), // Chandni Chowk
+          LatLng(28.6500, 77.2200), // Chawri Bazar
+          LatLng(28.6400, 77.2180), // New Delhi
+          LatLng(28.6328, 77.2197), // Rajiv Chowk
+          LatLng(28.6250, 77.2180), // Patel Chowk
+          LatLng(28.6200, 77.2150), // Central Secretariat
+          LatLng(28.6000, 77.2120), // Udyog Bhawan
+          LatLng(28.5900, 77.2100), // Jor Bagh
+          LatLng(28.5800, 77.2080), // INA
+          LatLng(28.5679, 77.2100), // AIIMS
+          LatLng(28.5600, 77.2080), // Green Park
+          LatLng(28.5500, 77.2050), // Hauz Khas
+          LatLng(28.5400, 77.2000), // Malviya Nagar
+          LatLng(28.5300, 77.1950), // Saket
+          LatLng(28.5200, 77.1900), // Qutab Minar
+          LatLng(28.5000, 77.1600), // Chhatarpur
+          LatLng(28.4800, 77.1000), // MG Road
+          LatLng(28.4700, 77.0800), // IFFCO Chowk
+          LatLng(28.4595, 77.0725), // HUDA City Centre
+        ],
+        stops: [
+          TransitStop(
+              name: "Samaypur Badli",
+              position: LatLng(28.7919, 77.1290),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Rajiv Chowk",
+              position: LatLng(28.6328, 77.2197),
+              arrivalTimeOffset: 35),
+          TransitStop(
+              name: "HUDA City Centre",
+              position: LatLng(28.4595, 77.0725),
+              arrivalTimeOffset: 65),
+        ]);
 
     // 2. DTC 502 (Detailed Road Path)
-    _routes['dtc_502'] =
-        const TransitRoute(id: 'dtc_502', color: Colors.green, polyline: [
-      LatLng(28.5175, 77.1856), // Mehrauli
-      LatLng(28.5250, 77.1900), LatLng(28.5350, 77.1950), // Qutub
-      LatLng(28.5400, 77.2000), // IIT
-      LatLng(28.5500, 77.2050), LatLng(28.5679, 77.2100), // AIIMS
-      LatLng(28.5800, 77.2150), LatLng(28.5900, 77.2200),
-      LatLng(28.6000, 77.2300), LatLng(28.6080, 77.2380), // India Gate
-      LatLng(28.6200, 77.2400), LatLng(28.6300, 77.2410),
-      LatLng(28.6562, 77.2410), // Old Delhi
-    ], stops: [
-      TransitStop(
-          name: "Mehrauli",
-          position: LatLng(28.5175, 77.1856),
-          arrivalTimeOffset: 0),
-      TransitStop(
-          name: "AIIMS",
-          position: LatLng(28.5679, 77.2100),
-          arrivalTimeOffset: 25),
-      TransitStop(
-          name: "Old Delhi",
-          position: LatLng(28.6562, 77.2410),
-          arrivalTimeOffset: 55),
-    ]);
+    _routes['dtc_502'] = const TransitRoute(
+        id: 'dtc_502',
+        city: 'Delhi',
+        color: Colors.green,
+        polyline: [
+          LatLng(28.5175, 77.1856), // Mehrauli
+          LatLng(28.5250, 77.1900), LatLng(28.5350, 77.1950), // Qutub
+          LatLng(28.5400, 77.2000), // IIT
+          LatLng(28.5500, 77.2050), LatLng(28.5679, 77.2100), // AIIMS
+          LatLng(28.5800, 77.2150), LatLng(28.5900, 77.2200),
+          LatLng(28.6000, 77.2300), LatLng(28.6080, 77.2380), // India Gate
+          LatLng(28.6200, 77.2400), LatLng(28.6300, 77.2410),
+          LatLng(28.6562, 77.2410), // Old Delhi
+        ],
+        stops: [
+          TransitStop(
+              name: "Mehrauli",
+              position: LatLng(28.5175, 77.1856),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Saket",
+              position: LatLng(28.5250, 77.2000),
+              arrivalTimeOffset: 10),
+          TransitStop(
+              name: "Green Park",
+              position: LatLng(28.5580, 77.2020),
+              arrivalTimeOffset: 18),
+          TransitStop(
+              name: "AIIMS",
+              position: LatLng(28.5679, 77.2100),
+              arrivalTimeOffset: 25),
+          TransitStop(
+              name: "Safdarjung",
+              position: LatLng(28.5900, 77.2100),
+              arrivalTimeOffset: 35),
+          TransitStop(
+              name: "Udyog Bhawan",
+              position: LatLng(28.6100, 77.2150),
+              arrivalTimeOffset: 45),
+          TransitStop(
+              name: "Old Delhi",
+              position: LatLng(28.6562, 77.2410),
+              arrivalTimeOffset: 55),
+        ]);
 
     // 3. Mumbai Western Line (Straight-ish Rail with curves)
-    _routes['mumbai_western'] =
-        TransitRoute(id: 'mumbai_western', color: Colors.blue[900], polyline: [
-      LatLng(18.9322, 72.8264), // Churchgate
-      LatLng(18.9500, 72.8200), LatLng(18.9696, 72.8193), // Mumbai Central
-      LatLng(19.0000, 72.8300), LatLng(19.0178, 72.8478), // Dadar
-      LatLng(19.0400, 72.8480), LatLng(19.0607, 72.8499), // Bandra
-      LatLng(19.0800, 72.8500), LatLng(19.1136, 72.8697), // Andheri
-      LatLng(19.1500, 72.8600), LatLng(19.2300, 72.8550), // Borivali
-      LatLng(19.3000, 72.8400), LatLng(19.4563, 72.8118), // Virar
-    ], stops: [
-      TransitStop(
-          name: "Churchgate",
-          position: LatLng(18.9322, 72.8264),
-          arrivalTimeOffset: 0),
-      TransitStop(
-          name: "Mumbai Central",
-          position: LatLng(18.9696, 72.8193),
-          arrivalTimeOffset: 10),
-      TransitStop(
-          name: "Dadar",
-          position: LatLng(19.0178, 72.8478),
-          arrivalTimeOffset: 20),
-      TransitStop(
-          name: "Bandra",
-          position: LatLng(19.0607, 72.8499),
-          arrivalTimeOffset: 30),
-      TransitStop(
-          name: "Andheri",
-          position: LatLng(19.1136, 72.8697),
-          arrivalTimeOffset: 45),
-      TransitStop(
-          name: "Borivali",
-          position: LatLng(19.2300, 72.8550),
-          arrivalTimeOffset: 60),
-      TransitStop(
-          name: "Virar",
-          position: LatLng(19.4563, 72.8118),
-          arrivalTimeOffset: 85),
-    ]);
+    _routes['mumbai_western'] = TransitRoute(
+        id: 'mumbai_western',
+        city: 'Mumbai',
+        type: TransitType.train,
+        color: Colors.blue[900],
+        polyline: [
+          LatLng(18.9322, 72.8264), // Churchgate
+          LatLng(18.9500, 72.8200), LatLng(18.9696, 72.8193), // Mumbai Central
+          LatLng(19.0000, 72.8300), LatLng(19.0178, 72.8478), // Dadar
+          LatLng(19.0400, 72.8480), LatLng(19.0607, 72.8499), // Bandra
+          LatLng(19.0800, 72.8500), LatLng(19.1136, 72.8697), // Andheri
+          LatLng(19.1500, 72.8600), LatLng(19.2300, 72.8550), // Borivali
+          LatLng(19.3000, 72.8400), LatLng(19.4563, 72.8118), // Virar
+        ],
+        stops: [
+          TransitStop(
+              name: "Churchgate",
+              position: LatLng(18.9322, 72.8264),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Marine Lines",
+              position: LatLng(18.9450, 72.8230),
+              arrivalTimeOffset: 3),
+          TransitStop(
+              name: "Grant Road",
+              position: LatLng(18.9600, 72.8160),
+              arrivalTimeOffset: 6),
+          TransitStop(
+              name: "Mumbai Central",
+              position: LatLng(18.9696, 72.8193),
+              arrivalTimeOffset: 10),
+          TransitStop(
+              name: "Lower Parel",
+              position: LatLng(18.9950, 72.8300),
+              arrivalTimeOffset: 15),
+          TransitStop(
+              name: "Dadar",
+              position: LatLng(19.0178, 72.8478),
+              arrivalTimeOffset: 20),
+          TransitStop(
+              name: "Bandra",
+              position: LatLng(19.0607, 72.8499),
+              arrivalTimeOffset: 30),
+          TransitStop(
+              name: "Andheri",
+              position: LatLng(19.1136, 72.8697),
+              arrivalTimeOffset: 45),
+          TransitStop(
+              name: "Malad",
+              position: LatLng(19.1860, 72.8480),
+              arrivalTimeOffset: 52),
+          TransitStop(
+              name: "Borivali",
+              position: LatLng(19.2300, 72.8550),
+              arrivalTimeOffset: 60),
+          TransitStop(
+              name: "Virar",
+              position: LatLng(19.4563, 72.8118),
+              arrivalTimeOffset: 85),
+        ]);
 
     // 4. Delhi Blue Line (Curves)
-    _routes['delhi_blue'] =
-        const TransitRoute(id: 'delhi_blue', color: Colors.blue, polyline: [
-      LatLng(28.6280, 77.0600), // Dwarka 21
-      LatLng(28.6200, 77.0900), LatLng(28.6150, 77.1500), // Janakpuri
-      LatLng(28.6400, 77.1600), LatLng(28.6500, 77.1800), // Karo Bagh
-      LatLng(28.6328, 77.2197), // Rajiv Chowk
-      LatLng(28.6250, 77.2500), LatLng(28.6200, 77.3000), // Mayur Vihar
-      LatLng(28.5800, 77.3100), LatLng(28.5700, 77.3200) // Noida
-    ], stops: [
-      TransitStop(
-          name: "Dwarka Sec 21",
-          position: LatLng(28.6280, 77.0600),
-          arrivalTimeOffset: 0),
-      TransitStop(
-          name: "Janakpuri West",
-          position: LatLng(28.6150, 77.1500),
-          arrivalTimeOffset: 15),
-      TransitStop(
-          name: "Rajiv Chowk",
-          position: LatLng(28.6328, 77.2197),
-          arrivalTimeOffset: 35),
-      TransitStop(
-          name: "Mayur Vihar",
-          position: LatLng(28.6250, 77.2500),
-          arrivalTimeOffset: 50),
-      TransitStop(
-          name: "Noida City",
-          position: LatLng(28.5700, 77.3200),
-          arrivalTimeOffset: 65)
-    ]);
+    _routes['delhi_blue'] = const TransitRoute(
+        id: 'delhi_blue',
+        city: 'Delhi',
+        type: TransitType.metro,
+        color: Colors.blue,
+        polyline: [
+          LatLng(28.6280, 77.0600), // Dwarka 21
+          LatLng(28.6200, 77.0900), LatLng(28.6150, 77.1500), // Janakpuri
+          LatLng(28.6400, 77.1600), LatLng(28.6500, 77.1800), // Karo Bagh
+          LatLng(28.6328, 77.2197), // Rajiv Chowk
+          LatLng(28.6250, 77.2500), LatLng(28.6200, 77.3000), // Mayur Vihar
+          LatLng(28.5800, 77.3100), LatLng(28.5700, 77.3200) // Noida
+        ],
+        stops: [
+          TransitStop(
+              name: "Dwarka Sec 21",
+              position: LatLng(28.6280, 77.0600),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Janakpuri West",
+              position: LatLng(28.6150, 77.1500),
+              arrivalTimeOffset: 15),
+          TransitStop(
+              name: "Rajendra Place",
+              position: LatLng(28.6420, 77.1780),
+              arrivalTimeOffset: 25),
+          TransitStop(
+              name: "RK Ashram",
+              position: LatLng(28.6380, 77.2100),
+              arrivalTimeOffset: 30),
+          TransitStop(
+              name: "Rajiv Chowk",
+              position: LatLng(28.6328, 77.2197),
+              arrivalTimeOffset: 35),
+          TransitStop(
+              name: "Barakhamba Road",
+              position: LatLng(28.6300, 77.2250),
+              arrivalTimeOffset: 38),
+          TransitStop(
+              name: "Mandi House",
+              position: LatLng(28.6260, 77.2340),
+              arrivalTimeOffset: 42),
+          TransitStop(
+              name: "Mayur Vihar",
+              position: LatLng(28.6250, 77.2500),
+              arrivalTimeOffset: 50),
+          TransitStop(
+              name: "Noida City Center",
+              position: LatLng(28.5700, 77.3200),
+              arrivalTimeOffset: 65)
+        ]);
 
     // 5. DTC Mudrika (Ring Road)
-    _routes['dtc_mudrika'] =
-        const TransitRoute(id: 'dtc_mudrika', color: Colors.green, polyline: [
-      LatLng(28.5679, 77.2100), // AIIMS
-      LatLng(28.5700, 77.1800), LatLng(28.5800, 77.1600), // Moti Bagh
-      LatLng(28.6000, 77.1400), LatLng(28.6300, 77.1200), // Naraina
-      LatLng(28.6700, 77.1300), LatLng(28.7000, 77.1500) // Azadpur
-    ], stops: [
-      TransitStop(
-          name: "AIIMS",
-          position: LatLng(28.5679, 77.2100),
-          arrivalTimeOffset: 0),
-      TransitStop(
-          name: "Azadpur",
-          position: LatLng(28.7000, 77.1500),
-          arrivalTimeOffset: 45)
-    ]);
+    _routes['dtc_mudrika'] = const TransitRoute(
+        id: 'dtc_mudrika',
+        city: 'Delhi',
+        color: Colors.green,
+        polyline: [
+          LatLng(28.5679, 77.2100), // AIIMS
+          LatLng(28.5700, 77.1800), LatLng(28.5800, 77.1600), // Moti Bagh
+          LatLng(28.6000, 77.1400), LatLng(28.6300, 77.1200), // Naraina
+          LatLng(28.6700, 77.1300), LatLng(28.7000, 77.1500) // Azadpur
+        ],
+        stops: [
+          TransitStop(
+              name: "AIIMS",
+              position: LatLng(28.5679, 77.2100),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Azadpur",
+              position: LatLng(28.7000, 77.1500),
+              arrivalTimeOffset: 45)
+        ]);
 
     // 6. Mumbai-Pune Shivneri (Expressway Curves)
     _routes['mum_pune'] =
@@ -450,6 +444,7 @@ class MockTransitService {
     // 7. Bengaluru Airport (Bellary Rd)
     _routes['bengaluru_airport'] = const TransitRoute(
         id: 'bengaluru_airport',
+        city: 'Bengaluru',
         color: Colors.orange,
         polyline: [
           LatLng(12.9716, 77.5946), // Majestic
@@ -472,6 +467,7 @@ class MockTransitService {
     // 8. Bengaluru Purple (East-West)
     _routes['bengaluru_purple'] = const TransitRoute(
         id: 'bengaluru_purple',
+        city: 'Bengaluru',
         color: Colors.deepPurple,
         polyline: [
           LatLng(12.9750, 77.7300), // Whitefield
@@ -483,26 +479,64 @@ class MockTransitService {
           TransitStop(
               name: "Whitefield",
               position: LatLng(12.9750, 77.7300),
-              arrivalTimeOffset: 0)
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Indiranagar",
+              position: LatLng(12.9780, 77.6400),
+              arrivalTimeOffset: 15),
+          TransitStop(
+              name: "MG Road",
+              position: LatLng(12.9750, 77.6100),
+              arrivalTimeOffset: 20),
+          TransitStop(
+              name: "Majestic",
+              position: LatLng(12.9716, 77.5946),
+              arrivalTimeOffset: 30),
+          TransitStop(
+              name: "Vijayanagar",
+              position: LatLng(12.9650, 77.5300),
+              arrivalTimeOffset: 45)
         ]);
 
     // 9. Jaipur Pink Line
-    _routes['jaipur_pink'] =
-        const TransitRoute(id: 'jaipur_pink', color: Colors.pink, polyline: [
-      LatLng(26.8800, 75.7500), // Mansarovar
-      LatLng(26.8900, 75.7700), LatLng(26.9000, 75.7900), // Station
-      LatLng(26.9150, 75.8000), LatLng(26.9200, 75.8100), // Sindhi Camp
-      LatLng(26.9250, 75.8250) // Badi Chaupar
-    ], stops: [
-      TransitStop(
-          name: "Mansarovar",
-          position: LatLng(26.8800, 75.7500),
-          arrivalTimeOffset: 0)
-    ]);
+    _routes['jaipur_pink'] = const TransitRoute(
+        id: 'jaipur_pink',
+        city: 'Jaipur',
+        type: TransitType.metro,
+        color: Colors.pink,
+        polyline: [
+          LatLng(26.8800, 75.7500), // Mansarovar
+          LatLng(26.8900, 75.7700), LatLng(26.9000, 75.7900), // Station
+          LatLng(26.9150, 75.8000), LatLng(26.9200, 75.8100), // Sindhi Camp
+          LatLng(26.9250, 75.8250) // Badi Chaupar
+        ],
+        stops: [
+          TransitStop(
+              name: "Mansarovar",
+              position: LatLng(26.8800, 75.7500),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Railway Station",
+              position: LatLng(26.9000, 75.7900),
+              arrivalTimeOffset: 10),
+          TransitStop(
+              name: "Sindhi Camp",
+              position: LatLng(26.9150, 75.8000),
+              arrivalTimeOffset: 15),
+          TransitStop(
+              name: "Chandpole",
+              position: LatLng(26.9200, 75.8150),
+              arrivalTimeOffset: 20),
+          TransitStop(
+              name: "Badi Chaupar",
+              position: LatLng(26.9250, 75.8250),
+              arrivalTimeOffset: 25)
+        ]);
 
     // 10. Ahmedabad BRTS
     _routes['ahmedabad_brts'] = const TransitRoute(
         id: 'ahmedabad_brts',
+        city: 'Ahmedabad',
         color: Colors.orangeAccent,
         polyline: [
           LatLng(23.0600, 72.5800), // RTO
@@ -514,40 +548,96 @@ class MockTransitService {
           TransitStop(
               name: "RTO",
               position: LatLng(23.0600, 72.5800),
-              arrivalTimeOffset: 0)
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Shivranjani",
+              position: LatLng(23.0400, 72.5600),
+              arrivalTimeOffset: 15),
+          TransitStop(
+              name: "Nehrunagar",
+              position: LatLng(23.0200, 72.5500),
+              arrivalTimeOffset: 25),
+          TransitStop(
+              name: "Maninagar",
+              position: LatLng(23.0000, 72.5900),
+              arrivalTimeOffset: 40)
         ]);
 
     // 11. Chennai Blue Line
-    _routes['chennai_blue'] =
-        const TransitRoute(id: 'chennai_blue', color: Colors.blue, polyline: [
-      LatLng(12.9800, 80.1600), // Airport
-      LatLng(12.9900, 80.1800), LatLng(13.0000, 80.2000), // Guindy
-      LatLng(13.0200, 80.2300), LatLng(13.0400, 80.2500), // Teynampet
-      LatLng(13.0600, 80.2600), LatLng(13.0800, 80.2700) // Central
-    ], stops: [
-      TransitStop(
-          name: "Airport",
-          position: LatLng(12.9800, 80.1600),
-          arrivalTimeOffset: 0)
-    ]);
+    _routes['chennai_blue'] = const TransitRoute(
+        id: 'chennai_blue',
+        city: 'Chennai',
+        type: TransitType.metro,
+        color: Colors.blue,
+        polyline: [
+          LatLng(12.9800, 80.1600), // Airport
+          LatLng(12.9900, 80.1800), LatLng(13.0000, 80.2000), // Guindy
+          LatLng(13.0200, 80.2300), LatLng(13.0400, 80.2500), // Teynampet
+          LatLng(13.0600, 80.2600), LatLng(13.0800, 80.2700) // Central
+        ],
+        stops: [
+          TransitStop(
+              name: "Airport",
+              position: LatLng(12.9800, 80.1600),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Guindy",
+              position: LatLng(13.0080, 80.2150),
+              arrivalTimeOffset: 10),
+          TransitStop(
+              name: "Nandanam",
+              position: LatLng(13.0300, 80.2400),
+              arrivalTimeOffset: 15),
+          TransitStop(
+              name: "Thousand Lights",
+              position: LatLng(13.0550, 80.2550),
+              arrivalTimeOffset: 22),
+          TransitStop(
+              name: "Chennai Central",
+              position: LatLng(13.0800, 80.2700),
+              arrivalTimeOffset: 30)
+        ]);
 
     // 12. Hyderabad Red Line
-    _routes['hyd_red'] =
-        const TransitRoute(id: 'hyd_red', color: Colors.red, polyline: [
-      LatLng(17.4950, 78.3600), // Miyapur
-      LatLng(17.4700, 78.3900), LatLng(17.4400, 78.4400), // Ameerpet
-      LatLng(17.4200, 78.4600), LatLng(17.3900, 78.4800), // Nampally
-      LatLng(17.3700, 78.5200), LatLng(17.3500, 78.5500) // LB Nagar
-    ], stops: [
-      TransitStop(
-          name: "Miyapur",
-          position: LatLng(17.4950, 78.3600),
-          arrivalTimeOffset: 0)
-    ]);
+    _routes['hyd_red'] = const TransitRoute(
+        id: 'hyd_red',
+        city: 'Hyderabad',
+        type: TransitType.metro,
+        color: Colors.red,
+        polyline: [
+          LatLng(17.4950, 78.3600), // Miyapur
+          LatLng(17.4700, 78.3900), LatLng(17.4400, 78.4400), // Ameerpet
+          LatLng(17.4200, 78.4600), LatLng(17.3900, 78.4800), // Nampally
+          LatLng(17.3700, 78.5200), LatLng(17.3500, 78.5500) // LB Nagar
+        ],
+        stops: [
+          TransitStop(
+              name: "Miyapur",
+              position: LatLng(17.4950, 78.3600),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Kukatpally",
+              position: LatLng(17.4800, 78.3800),
+              arrivalTimeOffset: 8),
+          TransitStop(
+              name: "Ameerpet",
+              position: LatLng(17.4350, 78.4450),
+              arrivalTimeOffset: 20),
+          TransitStop(
+              name: "Nampally",
+              position: LatLng(17.3900, 78.4700),
+              arrivalTimeOffset: 35),
+          TransitStop(
+              name: "LB Nagar",
+              position: LatLng(17.3500, 78.5500),
+              arrivalTimeOffset: 50)
+        ]);
 
     // 13. Lucknow Red Line
     _routes['lucknow_red'] = const TransitRoute(
         id: 'lucknow_red',
+        city: 'Lucknow',
+        type: TransitType.metro,
         color: Colors.redAccent,
         polyline: [
           LatLng(26.7600, 80.8800), // Amausi
@@ -557,31 +647,77 @@ class MockTransitService {
         ],
         stops: [
           TransitStop(
-              name: "Airport",
+              name: "Amausi (Airport)",
               position: LatLng(26.7600, 80.8800),
-              arrivalTimeOffset: 0)
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Charbagh",
+              position: LatLng(26.8300, 80.8900),
+              arrivalTimeOffset: 15),
+          TransitStop(
+              name: "Hazratganj",
+              position: LatLng(26.8500, 80.9400),
+              arrivalTimeOffset: 25),
+          TransitStop(
+              name: "Indira Nagar",
+              position: LatLng(26.8650, 80.9800),
+              arrivalTimeOffset: 30),
+          TransitStop(
+              name: "Munshipulia",
+              position: LatLng(26.8800, 80.9900),
+              arrivalTimeOffset: 35)
         ]);
 
     // 14. Kolkata Metro Blue
-    _routes['kolkata_blue'] =
-        const TransitRoute(id: 'kolkata_blue', color: Colors.blue, polyline: [
-      LatLng(22.6500, 88.3700), // Dakshineswar
-      LatLng(22.6300, 88.3650), LatLng(22.6000, 88.3600), // Dum Dum
-      LatLng(22.5800, 88.3550), LatLng(22.5600, 88.3500), // Esplanade
-      LatLng(22.5300, 88.3450), LatLng(22.5100, 88.3400), // Kalighat
-      LatLng(22.4700, 88.3900) // Kavi Subhash
-    ], stops: [
-      TransitStop(
-          name: "Dakshineswar",
-          position: LatLng(22.6500, 88.3700),
-          arrivalTimeOffset: 0)
-    ]);
+    _routes['kolkata_blue'] = const TransitRoute(
+        id: 'kolkata_blue',
+        city: 'Kolkata',
+        type: TransitType.metro,
+        color: Colors.blue,
+        polyline: [
+          LatLng(22.6500, 88.3700), // Dakshineswar
+          LatLng(22.6300, 88.3650), LatLng(22.6000, 88.3600), // Dum Dum
+          LatLng(22.5800, 88.3550), LatLng(22.5600, 88.3500), // Esplanade
+          LatLng(22.5300, 88.3450), LatLng(22.5100, 88.3400), // Kalighat
+          LatLng(22.4700, 88.3900) // Kavi Subhash
+        ],
+        stops: [
+          TransitStop(
+              name: "Dakshineswar",
+              position: LatLng(22.6500, 88.3700),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Dum Dum",
+              position: LatLng(22.6200, 88.3650),
+              arrivalTimeOffset: 12),
+          TransitStop(
+              name: "Shyambazar",
+              position: LatLng(22.6000, 88.3650),
+              arrivalTimeOffset: 18),
+          TransitStop(
+              name: "Esplanade",
+              position: LatLng(22.5650, 88.3500),
+              arrivalTimeOffset: 25),
+          TransitStop(
+              name: "Park Street",
+              position: LatLng(22.5500, 88.3500),
+              arrivalTimeOffset: 28),
+          TransitStop(
+              name: "Kalighat",
+              position: LatLng(22.5200, 88.3450),
+              arrivalTimeOffset: 35),
+          TransitStop(
+              name: "Kavi Subhash",
+              position: LatLng(22.4700, 88.3900),
+              arrivalTimeOffset: 45)
+        ]);
 
     // --- INDIAN RAILWAYS MAJOR CORRIDORS ---
 
     // 15. Delhi - Howrah (via Kanpur, Prayagraj)
     _routes['rail_del_how'] = const TransitRoute(
         id: 'rail_del_how',
+        type: TransitType.train,
         color: Colors.indigo, // Classic Railway Blue
         polyline: [
           LatLng(28.6562, 77.2410), // New Delhi
@@ -623,7 +759,7 @@ class MockTransitService {
               position: LatLng(23.6900, 86.9400),
               arrivalTimeOffset: 960),
           TransitStop(
-              name: "Howrah",
+              name: "Howrah (Kolkata)",
               position: LatLng(22.5800, 88.3300),
               arrivalTimeOffset: 1200),
         ]);
@@ -631,6 +767,7 @@ class MockTransitService {
     // 16. Delhi - Mumbai (via Kota, Vadodara) - Rajdhani Route
     _routes['rail_del_mum'] = const TransitRoute(
         id: 'rail_del_mum',
+        type: TransitType.train,
         color: Colors.redAccent, // Rajdhani/August Kranti Red
         polyline: [
           LatLng(28.5800, 77.2400), // Nizamuddin
@@ -646,7 +783,7 @@ class MockTransitService {
         ],
         stops: [
           TransitStop(
-              name: "Nizamuddin",
+              name: "Delhi Nizamuddin",
               position: LatLng(28.5800, 77.2400),
               arrivalTimeOffset: 0),
           TransitStop(
@@ -674,6 +811,7 @@ class MockTransitService {
     // 17. Mumbai - Chennai (via Pune, Solapur)
     _routes['rail_mum_chn'] = const TransitRoute(
         id: 'rail_mum_chn',
+        type: TransitType.train,
         color: Colors.blueGrey,
         polyline: [
           LatLng(18.9322, 72.8264), // CSMT
@@ -690,7 +828,7 @@ class MockTransitService {
         ],
         stops: [
           TransitStop(
-              name: "CSMT",
+              name: "Mumbai CSMT",
               position: LatLng(18.9322, 72.8264),
               arrivalTimeOffset: 0),
           TransitStop(
@@ -722,6 +860,7 @@ class MockTransitService {
     // 18. Howrah - Chennai (East Coast)
     _routes['rail_how_chn'] = const TransitRoute(
         id: 'rail_how_chn',
+        type: TransitType.train,
         color: Colors.brown, // Coromandel Route
         polyline: [
           LatLng(22.5800, 88.3300), // Howrah
@@ -737,7 +876,7 @@ class MockTransitService {
         ],
         stops: [
           TransitStop(
-              name: "Howrah",
+              name: "Howrah (Kolkata)",
               position: LatLng(22.5800, 88.3300),
               arrivalTimeOffset: 0),
           TransitStop(
@@ -754,92 +893,141 @@ class MockTransitService {
               arrivalTimeOffset: 1400),
         ]);
 
+    // 18b. Kolkata - Mumbai (Gitanjali Route)
+    _routes['rail_how_mum'] = const TransitRoute(
+        id: 'rail_how_mum',
+        type: TransitType.train,
+        color: Colors.teal,
+        polyline: [
+          LatLng(22.5800, 88.3300), // Howrah
+          LatLng(22.2500, 86.6000), // Kharagpur
+          LatLng(21.2000, 81.6000), // Raipur
+          LatLng(21.1000, 79.0000), // Nagpur
+          LatLng(20.5000, 76.0000), // Akola
+          LatLng(19.3000, 73.0000), // Kalyan
+          LatLng(18.9322, 72.8264), // CSMT
+        ],
+        stops: [
+          TransitStop(
+              name: "Howrah (Kolkata)",
+              position: LatLng(22.5800, 88.3300),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Kharagpur",
+              position: LatLng(22.2500, 86.6000),
+              arrivalTimeOffset: 120),
+          TransitStop(
+              name: "Raipur",
+              position: LatLng(21.2000, 81.6000),
+              arrivalTimeOffset: 600),
+          TransitStop(
+              name: "Nagpur",
+              position: LatLng(21.1000, 79.0000),
+              arrivalTimeOffset: 900),
+          TransitStop(
+              name: "Mumbai CSMT",
+              position: LatLng(18.9322, 72.8264),
+              arrivalTimeOffset: 1600),
+        ]);
+
     // --- NATIONAL HIGHWAYS (Long Distance Buses) ---
 
     // 19. NH-44 (North-South Corridor)
-    _routes['nh_44'] =
-        const TransitRoute(id: 'nh_44', color: Colors.orange, polyline: [
-      LatLng(34.0837, 74.7973), // Srinagar
-      LatLng(32.7266, 74.8570), // Jammu
-      LatLng(30.9010, 75.8573), // Ludhiana
-      LatLng(28.6139, 77.2090), // Delhi
-      LatLng(27.1767, 78.0081), // Agra
-      LatLng(21.1458, 79.0882), // Nagpur
-      LatLng(17.3850, 78.4867), // Hyderabad
-      LatLng(12.9716, 77.5946), // Bangalore
-      LatLng(11.6643, 78.1460), // Salem
-      LatLng(9.9252, 78.1198), // Madurai
-      LatLng(8.0883, 77.5385), // Kanyakumari
-    ], stops: [
-      TransitStop(
-          name: "Srinagar",
-          position: LatLng(34.0837, 74.7973),
-          arrivalTimeOffset: 0),
-      TransitStop(
-          name: "Delhi",
-          position: LatLng(28.6139, 77.2090),
-          arrivalTimeOffset: 720),
-      TransitStop(
-          name: "Hyderabad",
-          position: LatLng(17.3850, 78.4867),
-          arrivalTimeOffset: 1800),
-      TransitStop(
-          name: "Kanyakumari",
-          position: LatLng(8.0883, 77.5385),
-          arrivalTimeOffset: 2800),
-    ]);
+    _routes['nh_44'] = const TransitRoute(
+        id: 'nh_44',
+        type: TransitType.bus,
+        color: Colors.orange,
+        polyline: [
+          LatLng(34.0837, 74.7973), // Srinagar
+          LatLng(32.7266, 74.8570), // Jammu
+          LatLng(30.9010, 75.8573), // Ludhiana
+          LatLng(28.6139, 77.2090), // Delhi
+          LatLng(27.1767, 78.0081), // Agra
+          LatLng(21.1458, 79.0882), // Nagpur
+          LatLng(17.3850, 78.4867), // Hyderabad
+          LatLng(12.9716, 77.5946), // Bangalore
+          LatLng(11.6643, 78.1460), // Salem
+          LatLng(9.9252, 78.1198), // Madurai
+          LatLng(8.0883, 77.5385), // Kanyakumari
+        ],
+        stops: [
+          TransitStop(
+              name: "Srinagar",
+              position: LatLng(34.0837, 74.7973),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Delhi",
+              position: LatLng(28.6139, 77.2090),
+              arrivalTimeOffset: 720),
+          TransitStop(
+              name: "Hyderabad",
+              position: LatLng(17.3850, 78.4867),
+              arrivalTimeOffset: 1800),
+          TransitStop(
+              name: "Kanyakumari",
+              position: LatLng(8.0883, 77.5385),
+              arrivalTimeOffset: 2800),
+        ]);
 
     // 20. NH-27 (East-West Corridor)
-    _routes['nh_27'] =
-        const TransitRoute(id: 'nh_27', color: Colors.orange, polyline: [
-      LatLng(21.6417, 69.6293), // Porbandar
-      LatLng(24.5854, 72.7163), // Mount Abu
-      LatLng(25.1800, 75.8300), // Kota
-      LatLng(25.4484, 78.5685), // Jhansi
-      LatLng(26.4499, 80.3319), // Kanpur
-      LatLng(26.7606, 83.3732), // Gorakhpur
-      LatLng(26.7271, 88.3953), // Siliguri
-      LatLng(26.1433, 91.7898), // Guwahati
-      LatLng(24.8170, 92.7912), // Silchar
-    ], stops: [
-      TransitStop(
-          name: "Porbandar",
-          position: LatLng(21.6417, 69.6293),
-          arrivalTimeOffset: 0),
-      TransitStop(
-          name: "Kota",
-          position: LatLng(25.1800, 75.8300),
-          arrivalTimeOffset: 480),
-      TransitStop(
-          name: "Silchar",
-          position: LatLng(24.8170, 92.7912),
-          arrivalTimeOffset: 2400),
-    ]);
+    _routes['nh_27'] = const TransitRoute(
+        id: 'nh_27',
+        type: TransitType.bus,
+        color: Colors.orange,
+        polyline: [
+          LatLng(21.6417, 69.6293), // Porbandar
+          LatLng(24.5854, 72.7163), // Mount Abu
+          LatLng(25.1800, 75.8300), // Kota
+          LatLng(25.4484, 78.5685), // Jhansi
+          LatLng(26.4499, 80.3319), // Kanpur
+          LatLng(26.7606, 83.3732), // Gorakhpur
+          LatLng(26.7271, 88.3953), // Siliguri
+          LatLng(26.1433, 91.7898), // Guwahati
+          LatLng(24.8170, 92.7912), // Silchar
+        ],
+        stops: [
+          TransitStop(
+              name: "Porbandar",
+              position: LatLng(21.6417, 69.6293),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Kota",
+              position: LatLng(25.1800, 75.8300),
+              arrivalTimeOffset: 480),
+          TransitStop(
+              name: "Silchar",
+              position: LatLng(24.8170, 92.7912),
+              arrivalTimeOffset: 2400),
+        ]);
 
     // 21. NH-66 (West Coast)
-    _routes['nh_66'] =
-        const TransitRoute(id: 'nh_66', color: Colors.deepOrange, polyline: [
-      LatLng(18.9894, 73.1175), // Panvel (Mumbai)
-      LatLng(16.9904, 73.3120), // Ratnagiri
-      LatLng(15.4909, 73.8278), // Panaji (Goa)
-      LatLng(12.9141, 74.8560), // Mangalore
-      LatLng(11.2588, 75.7804), // Kozhikode
-      LatLng(9.9312, 76.2673), // Kochi
-      LatLng(8.5241, 76.9366), // Thiruvananthapuram
-    ], stops: [
-      TransitStop(
-          name: "Mumbai (Panvel)",
-          position: LatLng(18.9894, 73.1175),
-          arrivalTimeOffset: 0),
-      TransitStop(
-          name: "Goa (Panaji)",
-          position: LatLng(15.4909, 73.8278),
-          arrivalTimeOffset: 480),
-      TransitStop(
-          name: "Kochi",
-          position: LatLng(9.9312, 76.2673),
-          arrivalTimeOffset: 1200),
-    ]);
+    _routes['nh_66'] = const TransitRoute(
+        id: 'nh_66',
+        type: TransitType.bus,
+        color: Colors.deepOrange,
+        polyline: [
+          LatLng(18.9894, 73.1175), // Panvel (Mumbai)
+          LatLng(16.9904, 73.3120), // Ratnagiri
+          LatLng(15.4909, 73.8278), // Panaji (Goa)
+          LatLng(12.9141, 74.8560), // Mangalore
+          LatLng(11.2588, 75.7804), // Kozhikode
+          LatLng(9.9312, 76.2673), // Kochi
+          LatLng(8.5241, 76.9366), // Thiruvananthapuram
+        ],
+        stops: [
+          TransitStop(
+              name: "Mumbai (Panvel)",
+              position: LatLng(18.9894, 73.1175),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Goa (Panaji)",
+              position: LatLng(15.4909, 73.8278),
+              arrivalTimeOffset: 480),
+          TransitStop(
+              name: "Kochi",
+              position: LatLng(9.9312, 76.2673),
+              arrivalTimeOffset: 1200),
+        ]);
 
     // --- STATE ROAD TRANSPORT (Key Routes) ---
 
