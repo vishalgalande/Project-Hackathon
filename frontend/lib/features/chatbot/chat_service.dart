@@ -22,7 +22,8 @@ class ChatService {
   }
 
   void _initialize() {
-    final apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+    final apiKey = dotenv.env['GEMINI_API_KEY'] ??
+        const String.fromEnvironment('GEMINI_API_KEY');
 
     if (apiKey.isEmpty || apiKey == 'YOUR_GEMINI_API_KEY_HERE') {
       _initError = 'Please add your Gemini API key to the .env file';
