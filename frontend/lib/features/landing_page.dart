@@ -314,7 +314,7 @@ class _LandingPageState extends State<LandingPage> {
               ),
               OutlinedButton(
                 onPressed: () {
-                  context.go('/tracker');
+                  context.go('/intro');
                 },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textPrimary,

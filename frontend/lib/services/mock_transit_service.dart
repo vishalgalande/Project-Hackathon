@@ -43,8 +43,8 @@ class MockTransitService {
 
   void _spawnVehiclesForNewRoutes(List<TransitRoute> routes) {
     for (var route in routes) {
-      // Spawn 2-3 vehicles per route
-      for (int i = 0; i < 3; i++) {
+      // Spawn 5-8 vehicles per route for more density
+      for (int i = 0; i < 6; i++) {
         _spawnVehicleOnRoute(route.id, route, i);
       }
     }
@@ -75,23 +75,152 @@ class MockTransitService {
     String name = "Vehicle";
 
     type = route.type;
-    // Attempt to infer name/agency from Route ID or Metadata if not bus
+
+    // Train name lists for variety
+    final trainNames = [
+      'Rajdhani',
+      'Shatabdi',
+      'Duronto',
+      'Garib Rath',
+      'Jan Shatabdi',
+      'Superfast',
+      'Mail',
+      'Express',
+      'Tejas',
+      'Vande Bharat'
+    ];
+    final busNames = [
+      'Volvo',
+      'Sleeper',
+      'AC Seater',
+      'Semi-Sleeper',
+      'Shivneri',
+      'Deluxe',
+      'Express',
+      'Super Fast',
+      'Ordinary'
+    ];
+
+    final metroNames = [
+      'Blue Line',
+      'Yellow Line',
+      'Red Line',
+      'Green Line',
+      'Violet Line',
+      'Magneta Line',
+      'Pink Line',
+      'Orange Line',
+      'Aqua Line'
+    ];
+
+    // Generate unique names based on route and index
     if (type == TransitType.metro) {
-      agency = "Metro";
-      name = "Metro ${route.id.split('_').last}";
+      agency = "Metro Rail";
+      name =
+          "${metroNames[_random.nextInt(metroNames.length)]} Train #${index + 1}";
     } else if (type == TransitType.train) {
-      agency = "Rail";
-      name = "Train ${route.id.split('_').last}";
+      agency = "Indian Railways";
+      // Assign different train names based on index
+      String trainName = trainNames[index % trainNames.length];
+      name = "$trainName #${index + 1}";
+    } else if (type == TransitType.tram) {
+      agency = "CTC";
+      name = "Tram ${100 + _random.nextInt(100)}";
     } else {
-      agency = "Bus";
-      name = "Bus ${route.id.split('_').last}";
+      // Bus Logic
+      String busName = busNames[index % busNames.length];
+      name = "$busName ${_random.nextInt(999)}";
+
+      // Agency variation randomly
+      int agencyIndex = _random.nextInt(6);
+      if (agencyIndex == 0)
+        agency = "MSRTC";
+      else if (agencyIndex == 1)
+        agency = "KSRTC";
+      else if (agencyIndex == 2)
+        agency = "DTC";
+      else if (agencyIndex == 3)
+        agency = "BMTC";
+      else if (agencyIndex == 4)
+        agency = "BEST";
+      else
+        agency = "State Transport";
     }
 
-    // Override with hardcoded if declared
+    // Specific route naming for popular routes
     if (routeId.contains("delhi_yellow")) {
       agency = "DMRC";
-      name = "Yellow Line";
-      // ... (Keep existing specific logic if desired, or simplify)
+      name = "Yellow Line M${index + 1}";
+    } else if (routeId.contains("train_mumbai_pune_deccan")) {
+      agency = "Central Railway";
+      name = "Deccan Express ${12123 + index}";
+    } else if (routeId.contains("train_mumbai_pune_shatabdi")) {
+      agency = "Central Railway";
+      name = "Mumbai-Pune Shatabdi ${index + 1}";
+    } else if (routeId.contains("train_delhi_mumbai")) {
+      agency = "Western Railway";
+      final names = ['Rajdhani Express', 'August Kranti', 'Duronto Express'];
+      name = names[index % names.length];
+    } else if (routeId.contains("train_delhi_kolkata")) {
+      agency = "Eastern Railway";
+      final names = [
+        'Rajdhani Express',
+        'Purushottam Express',
+        'Poorva Express'
+      ];
+      name = names[index % names.length];
+    } else if (routeId.contains("train_mumbai_bangalore")) {
+      agency = "South Central Railway";
+      final names = ['Udyan Express', 'Chalukya Express', 'Karnataka Express'];
+      name = names[index % names.length];
+    } else if (routeId.contains("train_bangalore_chennai")) {
+      agency = "Southern Railway";
+      final names = [
+        'Shatabdi Express',
+        'Brindavan Express',
+        'Lalbagh Express'
+      ];
+      name = names[index % names.length];
+    } else if (routeId.contains("train_delhi_lucknow")) {
+      agency = "Northern Railway";
+      final names = ['Lucknow Shatabdi', 'Lucknow Mail', 'Gomti Express'];
+      name = names[index % names.length];
+    } else if (routeId.contains("train_chennai_hyderabad")) {
+      agency = "South Central Railway";
+      final names = ['Charminar Express', 'Godavari Express'];
+      name = names[index % names.length];
+    } else if (routeId.contains("train_kolkata_patna")) {
+      agency = "Eastern Railway";
+      final names = ['Rajdhani Express', 'Vikramshila Express'];
+      name = names[index % names.length];
+    } else if (routeId.contains("train_ahmedabad_mumbai")) {
+      agency = "Western Railway";
+      final names = ['Shatabdi Express', 'Karnavati Express', 'Gujarat Mail'];
+      name = names[index % names.length];
+    } else if (routeId.contains("bus_mumbai_pune")) {
+      agency = "MSRTC Shivneri";
+      final names = ['Shivneri Volvo', 'Ashwamedh', 'Shivshahi'];
+      name = names[index % names.length];
+    } else if (routeId.contains("bus_delhi")) {
+      agency = "Delhi Transport";
+      final names = ['Volvo AC', 'Super Deluxe', 'Express'];
+      name = names[index % names.length];
+    } else if (routeId.contains("bus_bangalore")) {
+      agency = "KSRTC";
+      final names = ['Airavat Club', 'Airavat Gold', 'Rajahamsa'];
+      name = names[index % names.length];
+    } else if (routeId.contains("bus_chennai")) {
+      agency = "SETC";
+      final names = ['Ultra Deluxe', 'AC Sleeper', 'Super Deluxe'];
+      name = names[index % names.length];
+    } else if (routeId.contains("bus_hyderabad")) {
+      agency = "TSRTC";
+      final names = ['Garuda Plus', 'Indra AC', 'Super Luxury'];
+      name = names[index % names.length];
+    } else if (routeId.contains("bus_kolkata")) {
+      agency = "NBSTC/SBSTC";
+      final names = ['Rocket', 'Volvo', 'AC Deluxe'];
+      name = names[index % names.length];
     }
 
     // Init position via interpolation
@@ -1333,6 +1462,1086 @@ class MockTransitService {
           position: LatLng(22.5750, 88.4200),
           arrivalTimeOffset: 600),
     ]);
+
+    // --- POPULAR INTERCITY ROUTES ---
+
+    // Delhi - Mumbai Express Bus
+    _routes['bus_delhi_mumbai'] = const TransitRoute(
+        id: 'bus_delhi_mumbai',
+        type: TransitType.bus,
+        color: Colors.deepOrange,
+        city: 'Delhi',
+        polyline: [
+          LatLng(28.6139, 77.2090), // Delhi
+          LatLng(27.1767, 78.0081), // Agra
+          LatLng(26.2183, 78.1828), // Gwalior
+          LatLng(23.2599, 77.4126), // Bhopal
+          LatLng(22.7196, 75.8577), // Indore
+          LatLng(21.1702, 72.8311), // Surat
+          LatLng(19.0760, 72.8777), // Mumbai
+        ],
+        stops: [
+          TransitStop(
+              name: "Delhi ISBT",
+              position: LatLng(28.6139, 77.2090),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Agra",
+              position: LatLng(27.1767, 78.0081),
+              arrivalTimeOffset: 180),
+          TransitStop(
+              name: "Bhopal",
+              position: LatLng(23.2599, 77.4126),
+              arrivalTimeOffset: 480),
+          TransitStop(
+              name: "Indore",
+              position: LatLng(22.7196, 75.8577),
+              arrivalTimeOffset: 600),
+          TransitStop(
+              name: "Mumbai Central",
+              position: LatLng(19.0760, 72.8777),
+              arrivalTimeOffset: 960),
+        ]);
+
+    // Delhi - Mumbai Rajdhani Express (Train)
+    _routes['train_delhi_mumbai_raj'] = TransitRoute(
+        id: 'train_delhi_mumbai_raj',
+        type: TransitType.train,
+        color: Colors.red[700],
+        city: 'Delhi',
+        polyline: [
+          LatLng(28.6423, 77.2196), // New Delhi Station
+          LatLng(27.1767, 78.0081), // Agra Cantt
+          LatLng(26.4499, 80.3319), // Kanpur
+          LatLng(25.3176, 82.9739), // Varanasi
+          LatLng(21.1458, 79.0882), // Nagpur
+          LatLng(18.9322, 72.8264), // Mumbai CSMT
+        ],
+        stops: [
+          TransitStop(
+              name: "New Delhi",
+              position: LatLng(28.6423, 77.2196),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Agra Cantt",
+              position: LatLng(27.1767, 78.0081),
+              arrivalTimeOffset: 120),
+          TransitStop(
+              name: "Nagpur",
+              position: LatLng(21.1458, 79.0882),
+              arrivalTimeOffset: 600),
+          TransitStop(
+              name: "Mumbai CSMT",
+              position: LatLng(18.9322, 72.8264),
+              arrivalTimeOffset: 960),
+        ]);
+
+    // Delhi - Kolkata Duronto (Train)
+    _routes['train_delhi_kolkata'] = TransitRoute(
+        id: 'train_delhi_kolkata',
+        type: TransitType.train,
+        color: Colors.blue[800],
+        city: 'Delhi',
+        polyline: [
+          LatLng(28.6625, 77.2280), // Delhi Nizamuddin
+          LatLng(26.4499, 80.3319), // Kanpur
+          LatLng(25.6093, 85.1376), // Patna
+          LatLng(23.7957, 86.4304), // Dhanbad
+          LatLng(22.5726, 88.3639), // Kolkata Howrah
+        ],
+        stops: [
+          TransitStop(
+              name: "Delhi Nizamuddin",
+              position: LatLng(28.6625, 77.2280),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Kanpur",
+              position: LatLng(26.4499, 80.3319),
+              arrivalTimeOffset: 300),
+          TransitStop(
+              name: "Patna",
+              position: LatLng(25.6093, 85.1376),
+              arrivalTimeOffset: 600),
+          TransitStop(
+              name: "Kolkata Howrah",
+              position: LatLng(22.5726, 88.3639),
+              arrivalTimeOffset: 1020),
+        ]);
+
+    // Delhi - Kolkata Bus
+    _routes['bus_delhi_kolkata'] = const TransitRoute(
+        id: 'bus_delhi_kolkata',
+        type: TransitType.bus,
+        color: Colors.teal,
+        city: 'Delhi',
+        polyline: [
+          LatLng(28.6139, 77.2090), // Delhi
+          LatLng(26.8467, 80.9462), // Lucknow
+          LatLng(25.3176, 82.9739), // Varanasi
+          LatLng(25.6093, 85.1376), // Patna
+          LatLng(22.5726, 88.3639), // Kolkata
+        ],
+        stops: [
+          TransitStop(
+              name: "Delhi",
+              position: LatLng(28.6139, 77.2090),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Lucknow",
+              position: LatLng(26.8467, 80.9462),
+              arrivalTimeOffset: 360),
+          TransitStop(
+              name: "Varanasi",
+              position: LatLng(25.3176, 82.9739),
+              arrivalTimeOffset: 600),
+          TransitStop(
+              name: "Kolkata",
+              position: LatLng(22.5726, 88.3639),
+              arrivalTimeOffset: 1080),
+        ]);
+
+    // Mumbai - Bangalore Express Bus
+    _routes['bus_mumbai_bangalore'] = const TransitRoute(
+        id: 'bus_mumbai_bangalore',
+        type: TransitType.bus,
+        color: Colors.purple,
+        city: 'Mumbai',
+        polyline: [
+          LatLng(19.0760, 72.8777), // Mumbai
+          LatLng(18.5204, 73.8567), // Pune
+          LatLng(17.6868, 74.0183), // Satara
+          LatLng(15.8497, 74.4977), // Belgaum
+          LatLng(15.3647, 75.1240), // Hubli
+          LatLng(12.9716, 77.5946), // Bangalore
+        ],
+        stops: [
+          TransitStop(
+              name: "Mumbai Dadar",
+              position: LatLng(19.0760, 72.8777),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Pune",
+              position: LatLng(18.5204, 73.8567),
+              arrivalTimeOffset: 180),
+          TransitStop(
+              name: "Belgaum",
+              position: LatLng(15.8497, 74.4977),
+              arrivalTimeOffset: 480),
+          TransitStop(
+              name: "Bangalore Majestic",
+              position: LatLng(12.9716, 77.5946),
+              arrivalTimeOffset: 720),
+        ]);
+
+    // Mumbai - Bangalore Train (Udyan Express)
+    _routes['train_mumbai_bangalore'] = TransitRoute(
+        id: 'train_mumbai_bangalore',
+        type: TransitType.train,
+        color: Colors.indigo[600],
+        city: 'Mumbai',
+        polyline: [
+          LatLng(18.9322, 72.8264), // Mumbai CSMT
+          LatLng(18.5204, 73.8567), // Pune
+          LatLng(17.6868, 74.0183), // Satara
+          LatLng(15.8497, 74.4977), // Belgaum
+          LatLng(12.9716, 77.5946), // Bangalore
+        ],
+        stops: [
+          TransitStop(
+              name: "Mumbai CSMT",
+              position: LatLng(18.9322, 72.8264),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Pune",
+              position: LatLng(18.5204, 73.8567),
+              arrivalTimeOffset: 180),
+          TransitStop(
+              name: "Bangalore City",
+              position: LatLng(12.9716, 77.5946),
+              arrivalTimeOffset: 1440),
+        ]);
+
+    // Mumbai - Chennai Express
+    _routes['train_mumbai_chennai'] = TransitRoute(
+        id: 'train_mumbai_chennai',
+        type: TransitType.train,
+        color: Colors.green[700],
+        city: 'Mumbai',
+        polyline: [
+          LatLng(18.9322, 72.8264), // Mumbai CSMT
+          LatLng(17.3850, 78.4867), // Hyderabad
+          LatLng(13.0827, 80.2707), // Chennai Central
+        ],
+        stops: [
+          TransitStop(
+              name: "Mumbai CSMT",
+              position: LatLng(18.9322, 72.8264),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Hyderabad",
+              position: LatLng(17.3850, 78.4867),
+              arrivalTimeOffset: 720),
+          TransitStop(
+              name: "Chennai Central",
+              position: LatLng(13.0827, 80.2707),
+              arrivalTimeOffset: 1320),
+        ]);
+
+    // Bangalore - Chennai Bus
+    _routes['bus_bangalore_chennai'] = const TransitRoute(
+        id: 'bus_bangalore_chennai',
+        type: TransitType.bus,
+        color: Colors.amber,
+        city: 'Bangalore',
+        polyline: [
+          LatLng(12.9716, 77.5946), // Bangalore
+          LatLng(12.5266, 78.2150), // Vellore
+          LatLng(13.0827, 80.2707), // Chennai
+        ],
+        stops: [
+          TransitStop(
+              name: "Bangalore Majestic",
+              position: LatLng(12.9716, 77.5946),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Vellore",
+              position: LatLng(12.5266, 78.2150),
+              arrivalTimeOffset: 120),
+          TransitStop(
+              name: "Chennai CMBT",
+              position: LatLng(13.0827, 80.2707),
+              arrivalTimeOffset: 360),
+        ]);
+
+    // Bangalore - Chennai Train (Shatabdi)
+    _routes['train_bangalore_chennai'] = TransitRoute(
+        id: 'train_bangalore_chennai',
+        type: TransitType.train,
+        color: Colors.red[600],
+        city: 'Bangalore',
+        polyline: [
+          LatLng(12.9716, 77.5946), // Bangalore City
+          LatLng(12.9180, 77.6190), // Krishnarajapuram
+          LatLng(12.7409, 77.8253), // Hosur
+          LatLng(12.5266, 78.2150), // Katpadi (Vellore)
+          LatLng(13.0827, 80.2707), // Chennai Central
+        ],
+        stops: [
+          TransitStop(
+              name: "Bangalore City",
+              position: LatLng(12.9716, 77.5946),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Katpadi (Vellore)",
+              position: LatLng(12.5266, 78.2150),
+              arrivalTimeOffset: 120),
+          TransitStop(
+              name: "Chennai Central",
+              position: LatLng(13.0827, 80.2707),
+              arrivalTimeOffset: 300),
+        ]);
+
+    // Kolkata - Chennai Train
+    _routes['train_kolkata_chennai'] = TransitRoute(
+        id: 'train_kolkata_chennai',
+        type: TransitType.train,
+        color: Colors.cyan[700],
+        city: 'Kolkata',
+        polyline: [
+          LatLng(22.5726, 88.3639), // Kolkata Howrah
+          LatLng(20.2961, 85.8245), // Bhubaneswar
+          LatLng(17.6868, 83.2185), // Visakhapatnam
+          LatLng(13.0827, 80.2707), // Chennai Central
+        ],
+        stops: [
+          TransitStop(
+              name: "Kolkata Howrah",
+              position: LatLng(22.5726, 88.3639),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Bhubaneswar",
+              position: LatLng(20.2961, 85.8245),
+              arrivalTimeOffset: 420),
+          TransitStop(
+              name: "Visakhapatnam",
+              position: LatLng(17.6868, 83.2185),
+              arrivalTimeOffset: 720),
+          TransitStop(
+              name: "Chennai Central",
+              position: LatLng(13.0827, 80.2707),
+              arrivalTimeOffset: 1560),
+        ]);
+
+    // Delhi - Jaipur Bus (Pink City Express)
+    _routes['bus_delhi_jaipur'] = const TransitRoute(
+        id: 'bus_delhi_jaipur',
+        type: TransitType.bus,
+        color: Colors.pink,
+        city: 'Delhi',
+        polyline: [
+          LatLng(28.6139, 77.2090), // Delhi
+          LatLng(28.4595, 77.0266), // Gurgaon
+          LatLng(27.5530, 76.6346), // Alwar
+          LatLng(26.9124, 75.7873), // Jaipur
+        ],
+        stops: [
+          TransitStop(
+              name: "Delhi ISBT",
+              position: LatLng(28.6139, 77.2090),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Gurgaon",
+              position: LatLng(28.4595, 77.0266),
+              arrivalTimeOffset: 60),
+          TransitStop(
+              name: "Jaipur Sindhi Camp",
+              position: LatLng(26.9124, 75.7873),
+              arrivalTimeOffset: 300),
+        ]);
+
+    // Delhi - Jaipur Train (Double Decker)
+    _routes['train_delhi_jaipur'] = TransitRoute(
+        id: 'train_delhi_jaipur',
+        type: TransitType.train,
+        color: Colors.pink[800],
+        city: 'Delhi',
+        polyline: [
+          LatLng(28.6401, 77.2180), // Delhi Sarai Rohilla
+          LatLng(27.2046, 77.4977), // Rewari
+          LatLng(26.9124, 75.7873), // Jaipur
+        ],
+        stops: [
+          TransitStop(
+              name: "Delhi Sarai Rohilla",
+              position: LatLng(28.6401, 77.2180),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Rewari",
+              position: LatLng(27.2046, 77.4977),
+              arrivalTimeOffset: 90),
+          TransitStop(
+              name: "Jaipur Junction",
+              position: LatLng(26.9124, 75.7873),
+              arrivalTimeOffset: 270),
+        ]);
+
+    // Hyderabad - Bangalore Bus
+    _routes['bus_hyderabad_bangalore'] = const TransitRoute(
+        id: 'bus_hyderabad_bangalore',
+        type: TransitType.bus,
+        color: Colors.orange,
+        city: 'Hyderabad',
+        polyline: [
+          LatLng(17.3850, 78.4867), // Hyderabad
+          LatLng(15.9129, 78.0029), // Kurnool
+          LatLng(14.6819, 77.5995), // Anantapur
+          LatLng(12.9716, 77.5946), // Bangalore
+        ],
+        stops: [
+          TransitStop(
+              name: "Hyderabad MGBS",
+              position: LatLng(17.3850, 78.4867),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Kurnool",
+              position: LatLng(15.9129, 78.0029),
+              arrivalTimeOffset: 240),
+          TransitStop(
+              name: "Anantapur",
+              position: LatLng(14.6819, 77.5995),
+              arrivalTimeOffset: 360),
+          TransitStop(
+              name: "Bangalore Majestic",
+              position: LatLng(12.9716, 77.5946),
+              arrivalTimeOffset: 600),
+        ]);
+
+    // Hyderabad - Bangalore Train
+    _routes['train_hyderabad_bangalore'] = TransitRoute(
+        id: 'train_hyderabad_bangalore',
+        type: TransitType.train,
+        color: Colors.deepPurple,
+        city: 'Hyderabad',
+        polyline: [
+          LatLng(17.4334, 78.5013), // Secunderabad
+          LatLng(15.9129, 78.0029), // Kurnool
+          LatLng(14.6819, 77.5995), // Anantapur
+          LatLng(13.3161, 77.1155), // Tumkur
+          LatLng(12.9716, 77.5946), // Bangalore
+        ],
+        stops: [
+          TransitStop(
+              name: "Secunderabad",
+              position: LatLng(17.4334, 78.5013),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Kurnool",
+              position: LatLng(15.9129, 78.0029),
+              arrivalTimeOffset: 240),
+          TransitStop(
+              name: "Bangalore City",
+              position: LatLng(12.9716, 77.5946),
+              arrivalTimeOffset: 720),
+        ]);
+
+    // --- MORE POPULAR INTERCITY ROUTES ---
+
+    // Mumbai - Pune Deccan Express (Train)
+    _routes['train_mumbai_pune_deccan'] = TransitRoute(
+        id: 'train_mumbai_pune_deccan',
+        type: TransitType.train,
+        color: Colors.blue[600],
+        city: 'Mumbai',
+        polyline: [
+          LatLng(18.9322, 72.8264), // Mumbai CSMT
+          LatLng(19.0176, 72.8562), // Dadar
+          LatLng(19.0330, 73.0297), // Thane
+          LatLng(18.7357, 73.4064), // Lonavala
+          LatLng(18.5204, 73.8567), // Pune
+        ],
+        stops: [
+          TransitStop(
+              name: "Mumbai CSMT",
+              position: LatLng(18.9322, 72.8264),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Dadar",
+              position: LatLng(19.0176, 72.8562),
+              arrivalTimeOffset: 20),
+          TransitStop(
+              name: "Lonavala",
+              position: LatLng(18.7357, 73.4064),
+              arrivalTimeOffset: 90),
+          TransitStop(
+              name: "Pune Junction",
+              position: LatLng(18.5204, 73.8567),
+              arrivalTimeOffset: 180),
+        ]);
+
+    // Mumbai - Pune Shatabdi (Train)
+    _routes['train_mumbai_pune_shatabdi'] = TransitRoute(
+        id: 'train_mumbai_pune_shatabdi',
+        type: TransitType.train,
+        color: Colors.red[600],
+        city: 'Mumbai',
+        polyline: [
+          LatLng(18.9322, 72.8264), // Mumbai CSMT
+          LatLng(18.7357, 73.4064), // Lonavala
+          LatLng(18.5204, 73.8567), // Pune
+        ],
+        stops: [
+          TransitStop(
+              name: "Mumbai CSMT",
+              position: LatLng(18.9322, 72.8264),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Lonavala",
+              position: LatLng(18.7357, 73.4064),
+              arrivalTimeOffset: 75),
+          TransitStop(
+              name: "Pune Junction",
+              position: LatLng(18.5204, 73.8567),
+              arrivalTimeOffset: 150),
+        ]);
+
+    // Mumbai - Pune Bus (MSRTC Shivneri)
+    _routes['bus_mumbai_pune'] = const TransitRoute(
+        id: 'bus_mumbai_pune',
+        type: TransitType.bus,
+        color: Colors.green,
+        city: 'Mumbai',
+        polyline: [
+          LatLng(19.0760, 72.8777), // Mumbai Central
+          LatLng(19.0330, 73.0297), // Thane
+          LatLng(18.7357, 73.4064), // Lonavala
+          LatLng(18.5204, 73.8567), // Pune
+        ],
+        stops: [
+          TransitStop(
+              name: "Mumbai Central",
+              position: LatLng(19.0760, 72.8777),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Thane",
+              position: LatLng(19.0330, 73.0297),
+              arrivalTimeOffset: 45),
+          TransitStop(
+              name: "Lonavala",
+              position: LatLng(18.7357, 73.4064),
+              arrivalTimeOffset: 120),
+          TransitStop(
+              name: "Pune Shivajinagar",
+              position: LatLng(18.5204, 73.8567),
+              arrivalTimeOffset: 210),
+        ]);
+
+    // Delhi - Lucknow Train (Shatabdi)
+    _routes['train_delhi_lucknow'] = TransitRoute(
+        id: 'train_delhi_lucknow',
+        type: TransitType.train,
+        color: Colors.indigo[600],
+        city: 'Delhi',
+        polyline: [
+          LatLng(28.6423, 77.2196), // New Delhi
+          LatLng(28.3670, 77.3070), // Ghaziabad
+          LatLng(26.8467, 80.9462), // Lucknow
+        ],
+        stops: [
+          TransitStop(
+              name: "New Delhi",
+              position: LatLng(28.6423, 77.2196),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Ghaziabad",
+              position: LatLng(28.3670, 77.3070),
+              arrivalTimeOffset: 30),
+          TransitStop(
+              name: "Lucknow Charbagh",
+              position: LatLng(26.8467, 80.9462),
+              arrivalTimeOffset: 390),
+        ]);
+
+    // Delhi - Lucknow Bus
+    _routes['bus_delhi_lucknow'] = const TransitRoute(
+        id: 'bus_delhi_lucknow',
+        type: TransitType.bus,
+        color: Colors.teal,
+        city: 'Delhi',
+        polyline: [
+          LatLng(28.6139, 77.2090), // Delhi
+          LatLng(28.3670, 77.3070), // Ghaziabad
+          LatLng(27.1767, 78.0081), // Agra
+          LatLng(26.8467, 80.9462), // Lucknow
+        ],
+        stops: [
+          TransitStop(
+              name: "Delhi ISBT",
+              position: LatLng(28.6139, 77.2090),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Agra",
+              position: LatLng(27.1767, 78.0081),
+              arrivalTimeOffset: 180),
+          TransitStop(
+              name: "Lucknow",
+              position: LatLng(26.8467, 80.9462),
+              arrivalTimeOffset: 480),
+        ]);
+
+    // Chennai - Hyderabad Train
+    _routes['train_chennai_hyderabad'] = TransitRoute(
+        id: 'train_chennai_hyderabad',
+        type: TransitType.train,
+        color: Colors.purple[600],
+        city: 'Chennai',
+        polyline: [
+          LatLng(13.0827, 80.2707), // Chennai Central
+          LatLng(14.6819, 77.5995), // Anantapur
+          LatLng(17.3850, 78.4867), // Hyderabad
+        ],
+        stops: [
+          TransitStop(
+              name: "Chennai Central",
+              position: LatLng(13.0827, 80.2707),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Anantapur",
+              position: LatLng(14.6819, 77.5995),
+              arrivalTimeOffset: 360),
+          TransitStop(
+              name: "Hyderabad Kacheguda",
+              position: LatLng(17.3850, 78.4867),
+              arrivalTimeOffset: 720),
+        ]);
+
+    // Chennai - Hyderabad Bus
+    _routes['bus_chennai_hyderabad'] = const TransitRoute(
+        id: 'bus_chennai_hyderabad',
+        type: TransitType.bus,
+        color: Colors.deepOrange,
+        city: 'Chennai',
+        polyline: [
+          LatLng(13.0827, 80.2707), // Chennai
+          LatLng(15.9259, 79.9908), // Ongole
+          LatLng(17.3850, 78.4867), // Hyderabad
+        ],
+        stops: [
+          TransitStop(
+              name: "Chennai CMBT",
+              position: LatLng(13.0827, 80.2707),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Ongole",
+              position: LatLng(15.9259, 79.9908),
+              arrivalTimeOffset: 300),
+          TransitStop(
+              name: "Hyderabad MGBS",
+              position: LatLng(17.3850, 78.4867),
+              arrivalTimeOffset: 600),
+        ]);
+
+    // Kolkata - Patna Train
+    _routes['train_kolkata_patna'] = TransitRoute(
+        id: 'train_kolkata_patna',
+        type: TransitType.train,
+        color: Colors.brown[600],
+        city: 'Kolkata',
+        polyline: [
+          LatLng(22.5726, 88.3639), // Kolkata Howrah
+          LatLng(23.7957, 86.4304), // Dhanbad
+          LatLng(25.6093, 85.1376), // Patna
+        ],
+        stops: [
+          TransitStop(
+              name: "Kolkata Howrah",
+              position: LatLng(22.5726, 88.3639),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Dhanbad",
+              position: LatLng(23.7957, 86.4304),
+              arrivalTimeOffset: 180),
+          TransitStop(
+              name: "Patna Junction",
+              position: LatLng(25.6093, 85.1376),
+              arrivalTimeOffset: 420),
+        ]);
+
+    // Kolkata - Patna Bus
+    _routes['bus_kolkata_patna'] = const TransitRoute(
+        id: 'bus_kolkata_patna',
+        type: TransitType.bus,
+        color: Colors.lime,
+        city: 'Kolkata',
+        polyline: [
+          LatLng(22.5726, 88.3639), // Kolkata
+          LatLng(23.7957, 86.4304), // Dhanbad
+          LatLng(25.6093, 85.1376), // Patna
+        ],
+        stops: [
+          TransitStop(
+              name: "Kolkata Esplanade",
+              position: LatLng(22.5726, 88.3639),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Dhanbad",
+              position: LatLng(23.7957, 86.4304),
+              arrivalTimeOffset: 240),
+          TransitStop(
+              name: "Patna",
+              position: LatLng(25.6093, 85.1376),
+              arrivalTimeOffset: 540),
+        ]);
+
+    // Ahmedabad - Mumbai Train
+    _routes['train_ahmedabad_mumbai'] = TransitRoute(
+        id: 'train_ahmedabad_mumbai',
+        type: TransitType.train,
+        color: Colors.amber[700],
+        city: 'Ahmedabad',
+        polyline: [
+          LatLng(23.0225, 72.5714), // Ahmedabad
+          LatLng(21.1702, 72.8311), // Surat
+          LatLng(19.0760, 72.8777), // Mumbai
+        ],
+        stops: [
+          TransitStop(
+              name: "Ahmedabad Junction",
+              position: LatLng(23.0225, 72.5714),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Surat",
+              position: LatLng(21.1702, 72.8311),
+              arrivalTimeOffset: 180),
+          TransitStop(
+              name: "Mumbai Central",
+              position: LatLng(19.0760, 72.8777),
+              arrivalTimeOffset: 420),
+        ]);
+
+    // Ahmedabad - Mumbai Bus
+    _routes['bus_ahmedabad_mumbai'] = const TransitRoute(
+        id: 'bus_ahmedabad_mumbai',
+        type: TransitType.bus,
+        color: Colors.cyan,
+        city: 'Ahmedabad',
+        polyline: [
+          LatLng(23.0225, 72.5714), // Ahmedabad
+          LatLng(22.3072, 73.1812), // Vadodara
+          LatLng(21.1702, 72.8311), // Surat
+          LatLng(19.0760, 72.8777), // Mumbai
+        ],
+        stops: [
+          TransitStop(
+              name: "Ahmedabad",
+              position: LatLng(23.0225, 72.5714),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Vadodara",
+              position: LatLng(22.3072, 73.1812),
+              arrivalTimeOffset: 120),
+          TransitStop(
+              name: "Surat",
+              position: LatLng(21.1702, 72.8311),
+              arrivalTimeOffset: 240),
+          TransitStop(
+              name: "Mumbai",
+              position: LatLng(19.0760, 72.8777),
+              arrivalTimeOffset: 480),
+        ]);
+
+    // Pune - Bangalore Train
+    _routes['train_pune_bangalore'] = TransitRoute(
+        id: 'train_pune_bangalore',
+        type: TransitType.train,
+        color: Colors.teal[700],
+        city: 'Pune',
+        polyline: [
+          LatLng(18.5204, 73.8567), // Pune
+          LatLng(17.6868, 74.0183), // Satara
+          LatLng(15.8497, 74.4977), // Belgaum
+          LatLng(12.9716, 77.5946), // Bangalore
+        ],
+        stops: [
+          TransitStop(
+              name: "Pune Junction",
+              position: LatLng(18.5204, 73.8567),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Satara",
+              position: LatLng(17.6868, 74.0183),
+              arrivalTimeOffset: 120),
+          TransitStop(
+              name: "Belgaum",
+              position: LatLng(15.8497, 74.4977),
+              arrivalTimeOffset: 360),
+          TransitStop(
+              name: "Bangalore City",
+              position: LatLng(12.9716, 77.5946),
+              arrivalTimeOffset: 660),
+        ]);
+
+    // Pune - Bangalore Bus
+    _routes['bus_pune_bangalore'] = const TransitRoute(
+        id: 'bus_pune_bangalore',
+        type: TransitType.bus,
+        color: Colors.indigo,
+        city: 'Pune',
+        polyline: [
+          LatLng(18.5204, 73.8567), // Pune
+          LatLng(16.7050, 74.2433), // Kolhapur
+          LatLng(15.8497, 74.4977), // Belgaum
+          LatLng(15.3647, 75.1240), // Hubli
+          LatLng(12.9716, 77.5946), // Bangalore
+        ],
+        stops: [
+          TransitStop(
+              name: "Pune Swargate",
+              position: LatLng(18.5204, 73.8567),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Kolhapur",
+              position: LatLng(16.7050, 74.2433),
+              arrivalTimeOffset: 240),
+          TransitStop(
+              name: "Belgaum",
+              position: LatLng(15.8497, 74.4977),
+              arrivalTimeOffset: 360),
+          TransitStop(
+              name: "Bangalore Majestic",
+              position: LatLng(12.9716, 77.5946),
+              arrivalTimeOffset: 660),
+        ]);
+
+    // Delhi - Chandigarh Train
+    _routes['train_delhi_chandigarh'] = TransitRoute(
+        id: 'train_delhi_chandigarh',
+        type: TransitType.train,
+        color: Colors.green[700],
+        city: 'Delhi',
+        polyline: [
+          LatLng(28.6423, 77.2196), // New Delhi
+          LatLng(29.9456, 76.8232), // Ambala
+          LatLng(30.7333, 76.7794), // Chandigarh
+        ],
+        stops: [
+          TransitStop(
+              name: "New Delhi",
+              position: LatLng(28.6423, 77.2196),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Ambala Cantt",
+              position: LatLng(29.9456, 76.8232),
+              arrivalTimeOffset: 150),
+          TransitStop(
+              name: "Chandigarh",
+              position: LatLng(30.7333, 76.7794),
+              arrivalTimeOffset: 210),
+        ]);
+
+    // Delhi - Chandigarh Bus
+    _routes['bus_delhi_chandigarh'] = const TransitRoute(
+        id: 'bus_delhi_chandigarh',
+        type: TransitType.bus,
+        color: Colors.lightBlue,
+        city: 'Delhi',
+        polyline: [
+          LatLng(28.6139, 77.2090), // Delhi
+          LatLng(29.1492, 75.7217), // Karnal
+          LatLng(30.7333, 76.7794), // Chandigarh
+        ],
+        stops: [
+          TransitStop(
+              name: "Delhi ISBT",
+              position: LatLng(28.6139, 77.2090),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Karnal",
+              position: LatLng(29.1492, 75.7217),
+              arrivalTimeOffset: 120),
+          TransitStop(
+              name: "Chandigarh ISBT",
+              position: LatLng(30.7333, 76.7794),
+              arrivalTimeOffset: 300),
+        ]);
+
+    // Hyderabad - Mumbai Train
+    _routes['train_hyderabad_mumbai'] = TransitRoute(
+        id: 'train_hyderabad_mumbai',
+        type: TransitType.train,
+        color: Colors.pink[700],
+        city: 'Hyderabad',
+        polyline: [
+          LatLng(17.4334, 78.5013), // Secunderabad
+          LatLng(19.8762, 75.3433), // Aurangabad
+          LatLng(18.9322, 72.8264), // Mumbai CSMT
+        ],
+        stops: [
+          TransitStop(
+              name: "Secunderabad",
+              position: LatLng(17.4334, 78.5013),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Aurangabad",
+              position: LatLng(19.8762, 75.3433),
+              arrivalTimeOffset: 420),
+          TransitStop(
+              name: "Mumbai CSMT",
+              position: LatLng(18.9322, 72.8264),
+              arrivalTimeOffset: 780),
+        ]);
+
+    // Hyderabad - Mumbai Bus
+    _routes['bus_hyderabad_mumbai'] = const TransitRoute(
+        id: 'bus_hyderabad_mumbai',
+        type: TransitType.bus,
+        color: Colors.deepPurple,
+        city: 'Hyderabad',
+        polyline: [
+          LatLng(17.3850, 78.4867), // Hyderabad
+          LatLng(18.5204, 73.8567), // Pune
+          LatLng(19.0760, 72.8777), // Mumbai
+        ],
+        stops: [
+          TransitStop(
+              name: "Hyderabad MGBS",
+              position: LatLng(17.3850, 78.4867),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Pune",
+              position: LatLng(18.5204, 73.8567),
+              arrivalTimeOffset: 540),
+          TransitStop(
+              name: "Mumbai Dadar",
+              position: LatLng(19.0760, 72.8777),
+              arrivalTimeOffset: 720),
+        ]);
+    // --- NEW ADDITIONS (Trams, Metro, Vande Bharat) ---
+
+    // 36. Kolkata Tram Route 25 (Ballygunge - Tollygunge)
+    _routes['kolkata_tram_25'] = const TransitRoute(
+        id: 'kolkata_tram_25',
+        type: TransitType.tram,
+        color: Colors.purpleAccent,
+        city: 'Kolkata',
+        polyline: [
+          LatLng(22.5280, 88.3650), // Ballygunge
+          LatLng(22.5200, 88.3600), // Gariahat
+          LatLng(22.5100, 88.3500), // Lake Gardens
+          LatLng(22.4950, 88.3450), // Tollygunge
+        ],
+        stops: [
+          TransitStop(
+              name: "Ballygunge",
+              position: LatLng(22.5280, 88.3650),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Gariahat",
+              position: LatLng(22.5200, 88.3600),
+              arrivalTimeOffset: 120),
+          TransitStop(
+              name: "Tollygunge",
+              position: LatLng(22.4950, 88.3450),
+              arrivalTimeOffset: 300),
+        ]);
+
+    // 37. Kolkata Tram Route 36 (Esplanade - Kidderpore)
+    _routes['kolkata_tram_36'] = const TransitRoute(
+        id: 'kolkata_tram_36',
+        type: TransitType.tram,
+        color: Colors.purpleAccent,
+        city: 'Kolkata',
+        polyline: [
+          LatLng(22.5644, 88.3517), // Esplanade
+          LatLng(22.5500, 88.3300), // Fort William
+          LatLng(22.5350, 88.3200), // Kidderpore
+        ],
+        stops: [
+          TransitStop(
+              name: "Esplanade",
+              position: LatLng(22.5644, 88.3517),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Kidderpore",
+              position: LatLng(22.5350, 88.3200),
+              arrivalTimeOffset: 240),
+        ]);
+
+    // 38. Mumbai Metro Aqua Line 3 (Underground)
+    _routes['mum_metro_aqua'] = const TransitRoute(
+        id: 'mum_metro_aqua',
+        city: 'Mumbai',
+        type: TransitType.metro,
+        color: Colors.cyanAccent,
+        polyline: [
+          LatLng(19.1300, 72.8700), // Aarey
+          LatLng(19.1100, 72.8600), // SEEPZ
+          LatLng(19.0600, 72.8400), // BKC
+          LatLng(19.0178, 72.8478), // Dadar
+          LatLng(18.9696, 72.8193), // Mumbai Central
+          LatLng(18.9322, 72.8264), // Churchgate
+          LatLng(18.9100, 72.8200), // Cuffe Parade
+        ],
+        stops: [
+          TransitStop(
+              name: "Aarey Colony",
+              position: LatLng(19.1300, 72.8700),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "BKC",
+              position: LatLng(19.0600, 72.8400),
+              arrivalTimeOffset: 300),
+          TransitStop(
+              name: "Cuffe Parade",
+              position: LatLng(18.9100, 72.8200),
+              arrivalTimeOffset: 900),
+        ]);
+
+    // 39. Pune Metro Purple Line
+    _routes['pune_metro_purple'] = const TransitRoute(
+        id: 'pune_metro_purple',
+        city: 'Pune',
+        type: TransitType.metro,
+        color: Colors.purple,
+        polyline: [
+          LatLng(18.6500, 73.8000), // PCMC
+          LatLng(18.5800, 73.8200), // Dapodi
+          LatLng(18.5204, 73.8567), // Shivajinagar
+          LatLng(18.5100, 73.8600), // Swargate
+        ],
+        stops: [
+          TransitStop(
+              name: "PCMC Bhavan",
+              position: LatLng(18.6500, 73.8000),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Shivajinagar",
+              position: LatLng(18.5204, 73.8567),
+              arrivalTimeOffset: 300),
+          TransitStop(
+              name: "Swargate",
+              position: LatLng(18.5100, 73.8600),
+              arrivalTimeOffset: 420),
+        ]);
+
+    // 40. Delhi Airport Express (Orange Line)
+    _routes['delhi_metro_orange'] = const TransitRoute(
+        id: 'delhi_metro_orange',
+        city: 'Delhi',
+        type: TransitType.metro,
+        color: Colors.orange,
+        polyline: [
+          LatLng(28.6423, 77.2196), // New Delhi
+          LatLng(28.6250, 77.2100), // Shivaji Stadium
+          LatLng(28.5900, 77.1600), // Dhaula Kuan
+          LatLng(28.5562, 77.1000), // Aerocity
+          LatLng(28.5550, 77.0850), // IGI Airport
+          LatLng(28.6280, 77.0600), // Dwarka 21
+        ],
+        stops: [
+          TransitStop(
+              name: "New Delhi",
+              position: LatLng(28.6423, 77.2196),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Dhaula Kuan",
+              position: LatLng(28.5900, 77.1600),
+              arrivalTimeOffset: 120),
+          TransitStop(
+              name: "IGI Airport T3",
+              position: LatLng(28.5550, 77.0850),
+              arrivalTimeOffset: 240),
+        ]);
+
+    // 41. Mumbai - Goa Vande Bharat (Train)
+    _routes['train_mumbai_goa_vb'] = TransitRoute(
+        id: 'train_mumbai_goa_vb',
+        type: TransitType.train,
+        color: Colors.white, // Vande Bharat White/Blue
+        city: 'Mumbai',
+        polyline: [
+          LatLng(18.9322, 72.8264), // CSMT
+          LatLng(19.0178, 72.8478), // Dadar
+          LatLng(18.9894, 73.1175), // Panvel
+          LatLng(16.9904, 73.3120), // Ratnagiri
+          LatLng(15.2832, 73.9862), // Madgaon
+        ],
+        stops: [
+          TransitStop(
+              name: "Mumbai CSMT",
+              position: LatLng(18.9322, 72.8264),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "Ratnagiri",
+              position: LatLng(16.9904, 73.3120),
+              arrivalTimeOffset: 240),
+          TransitStop(
+              name: "Madgaon (Goa)",
+              position: LatLng(15.2832, 73.9862),
+              arrivalTimeOffset: 480),
+        ]);
+
+    // 42. Hyderabad Airport Pushpak (Bus)
+    _routes['bus_hyd_airport'] = const TransitRoute(
+        id: 'bus_hyd_airport',
+        type: TransitType.bus,
+        color: Colors.lightGreenAccent,
+        city: 'Hyderabad',
+        polyline: [
+          LatLng(17.4334, 78.5013), // Secunderabad
+          LatLng(17.4400, 78.4400), // Ameerpet
+          LatLng(17.4000, 78.4000), // Gachibowli
+          LatLng(17.2403, 78.4294), // RGIA Airport
+        ],
+        stops: [
+          TransitStop(
+              name: "Secunderabad",
+              position: LatLng(17.4334, 78.5013),
+              arrivalTimeOffset: 0),
+          TransitStop(
+              name: "RGIA Airport",
+              position: LatLng(17.2403, 78.4294),
+              arrivalTimeOffset: 90),
+        ]);
   }
 
   TransitRoute _generateGenericRoute(String routeId) {
@@ -1344,9 +2553,22 @@ class MockTransitService {
   void _generateInitialVehicles() {
     _vehicles.clear();
     _routes.forEach((routeId, route) {
-      int count = 2; // Default spawn count
-      if (routeId.contains('delhi_yellow')) count = 4;
-      if (routeId.contains('mum_metro')) count = 3;
+      int count = 5; // HIGH DENSITY DEFAULT
+
+      // Metro lines get HIGH volume
+      if (route.type == TransitType.metro) count = 8;
+
+      // Trams are frequent
+      if (route.type == TransitType.tram) count = 6;
+
+      // Intercity trains get medium count
+      if (routeId.contains('train_')) count = 4;
+
+      // Long distance buses
+      if (routeId.contains('bus_') && !routeId.contains('brts')) count = 4;
+
+      // BRTS gets high volume
+      if (routeId.contains('brts')) count = 10;
 
       for (int i = 0; i < count; i++) {
         _spawnVehicleOnRoute(routeId, route, i);
