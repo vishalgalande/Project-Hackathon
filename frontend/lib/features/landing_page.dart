@@ -115,7 +115,8 @@ class _LandingPageState extends State<LandingPage> {
                             'Safety Map feature - Navigate to web version'),
                       ),
                     );
-                    context.go('/geofencing');
+                    context
+                        .go('/geofencing', extra: {'triggerAnimation': true});
                   },
                 ),
                 const SizedBox(width: 40),
@@ -422,7 +423,7 @@ class _LandingPageState extends State<LandingPage> {
             children: [
               ElevatedButton(
                 onPressed: () {
-                  context.go('/geofencing');
+                  context.go('/geofencing', extra: {'triggerAnimation': true});
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -508,7 +509,8 @@ class _LandingPageState extends State<LandingPage> {
                         ? (constraints.maxWidth - 24) / 2
                         : constraints.maxWidth,
                     onTap: () {
-                      context.go('/geofencing');
+                      context
+                          .go('/geofencing', extra: {'triggerAnimation': true});
                     },
                   ),
                   _FeatureCard(

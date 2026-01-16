@@ -63,7 +63,11 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/geofencing',
       name: 'geofencing',
-      builder: (context, state) => const CommandCenterPage(),
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        final triggerAnimation = extra?['triggerAnimation'] as bool? ?? false;
+        return CommandCenterPage(triggerIntroAnimation: triggerAnimation);
+      },
     ),
     GoRoute(
       path: '/intel/:zoneId',

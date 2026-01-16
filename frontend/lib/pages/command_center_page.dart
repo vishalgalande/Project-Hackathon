@@ -14,18 +14,23 @@ import '../services/tracking_service.dart';
 
 /// Page 2: Real Map View (OpenStreetMap) - EXPANDED DATASET
 class CommandCenterPage extends ConsumerStatefulWidget {
-  const CommandCenterPage({super.key});
+  final bool triggerIntroAnimation;
+  const CommandCenterPage({super.key, this.triggerIntroAnimation = false});
 
   @override
   ConsumerState<CommandCenterPage> createState() => _CommandCenterPageState();
 }
 
-class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
+class _CommandCenterPageState extends ConsumerState<CommandCenterPage>
+    with SingleTickerProviderStateMixin {
   final MapController _mapController = MapController();
   late FocusNode _focusNode; // For keyboard events
   // Center of India (approximately)
-  final LatLng _initialCenter = const LatLng(20.5937, 78.9629);
-  final double _initialZoom = 5.0; // Zoom out to see all India
+  late LatLng _initialCenter;
+  late double _initialZoom;
+  // Final target for animation (Jaipur)
+  final LatLng _jaipurCenter = const LatLng(26.9124, 75.7873);
+  final double _targetZoom = 12.0; // Street level zoom
   bool _isDarkMode = false; // Add state for map style
   String _currentState = ''; // Current state/region being viewed
   bool _mapReady = false; // Track if map controller is ready
@@ -124,7 +129,68 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   void initState() {
     super.initState();
     _focusNode = FocusNode();
+
+    // Initialize map state based on animation trigger
+    if (widget.triggerIntroAnimation) {
+      // Start at India center for Zoom transition
+      _initialCenter = const LatLng(20.5937, 78.9629);
+      _initialZoom = 5.0; // Zoomed out India view
+
+      // Schedule animation after first frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _playIntroAnimation();
+      });
+    } else {
+      // Normal load
+      _initialCenter = _jaipurCenter;
+      _initialZoom = 5.0;
+    }
+
     _initUserLocation();
+  }
+
+  /// Play the globe spinning transition
+  Future<void> _playIntroAnimation() async {
+    // Wait a brief moment for map to render
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    // Step 1: "Spin" - Fast pan from Atlantic to India
+    if (!mounted) return;
+
+    // Animate to India with zoom in
+    _animateMapTo(_jaipurCenter, _targetZoom);
+  }
+
+  void _animateMapTo(LatLng destLocation, double destZoom) {
+    // Simple custom animation implementation
+    final latTween = Tween<double>(
+        begin: _mapController.camera.center.latitude,
+        end: destLocation.latitude);
+    final lngTween = Tween<double>(
+        begin: _mapController.camera.center.longitude,
+        end: destLocation.longitude);
+    final zoomTween =
+        Tween<double>(begin: _mapController.camera.zoom, end: destZoom);
+
+    final controller =
+        AnimationController(duration: const Duration(seconds: 3), vsync: this);
+    final animation =
+        CurvedAnimation(parent: controller, curve: Curves.easeInOutCubic);
+
+    controller.addListener(() {
+      if (!mounted) return;
+      _mapController.move(
+          LatLng(latTween.evaluate(animation), lngTween.evaluate(animation)),
+          zoomTween.evaluate(animation));
+    });
+
+    animation.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        controller.dispose();
+      }
+    });
+
+    controller.forward();
   }
 
   /// Get user's current location and center map on it
@@ -227,138 +293,141 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
         extendBodyBehindAppBar: true,
         body: Stack(
           children: [
-            FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: _initialCenter,
-                initialZoom: _initialZoom,
-                minZoom: 4,
-                maxZoom: 18,
-                // India bounds - prevents panning outside India
-                // maxBounds: LatLngBounds(
-                //   const LatLng(6.0, 68.0),   // Southwest
-                //   const LatLng(35.5, 97.5),  // Northeast
-                // ),
-                interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.all,
-                  enableScrollWheel: true,
-                  pinchZoomThreshold: 0.3,
-                ),
-                onMapReady: () {
-                  setState(() {
-                    _mapReady = true;
-                  });
-                  // Move to user location if available
-                  if (_userLocation != null) {
-                    _mapController.move(_userLocation!, 10);
-                  }
-                },
-                onPositionChanged: (position, hasGesture) {
-                  // Detect current state based on map center
-                  final center = position.center;
-                  final zoom = position.zoom;
-                  if (center != null && zoom != null && zoom > 7) {
-                    final newState =
-                        _detectState(center.latitude, center.longitude);
-                    if (newState != _currentState) {
-                      setState(() {
-                        _currentState = newState;
-                      });
+            // RepaintBoundary optimization
+            RepaintBoundary(
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: _initialCenter,
+                  initialZoom: _initialZoom,
+                  minZoom: 4,
+                  maxZoom: 18,
+                  // India bounds - prevents panning outside India
+                  // maxBounds: LatLngBounds(
+                  //   const LatLng(6.0, 68.0),   // Southwest
+                  //   const LatLng(35.5, 97.5),  // Northeast
+                  // ),
+                  interactionOptions: const InteractionOptions(
+                    flags: InteractiveFlag.all,
+                    enableScrollWheel: true,
+                    pinchZoomThreshold: 0.3,
+                  ),
+                  onMapReady: () {
+                    setState(() {
+                      _mapReady = true;
+                    });
+                    // Move to user location if available
+                    if (_userLocation != null) {
+                      _mapController.move(_userLocation!, 10);
                     }
-                  } else {
-                    if (_currentState != '') {
-                      setState(() {
-                        _currentState = '';
-                      });
+                  },
+                  onPositionChanged: (position, hasGesture) {
+                    // Detect current state based on map center
+                    final center = position.center;
+                    final zoom = position.zoom;
+                    if (center != null && zoom != null && zoom > 7) {
+                      final newState =
+                          _detectState(center.latitude, center.longitude);
+                      if (newState != _currentState) {
+                        setState(() {
+                          _currentState = newState;
+                        });
+                      }
+                    } else {
+                      if (_currentState != '') {
+                        setState(() {
+                          _currentState = '';
+                        });
+                      }
                     }
-                  }
-                  // Trigger rebuild for zone filtering
-                  setState(() {
-                    _currentZoom = position.zoom ?? _currentZoom;
-                  });
-                },
-                onTap: (_, __) => {},
-              ),
-              children: [
-                TileLayer(
-                  // Switch between Standard and Dark Matter
-                  urlTemplate: _isDarkMode
-                      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                      : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.example.safezone',
-                  subdomains: const ['a', 'b', 'c'],
-                  tileProvider: CancellableNetworkTileProvider(),
+                    // Trigger rebuild for zone filtering
+                    setState(() {
+                      _currentZoom = position.zoom ?? _currentZoom;
+                    });
+                  },
+                  onTap: (_, __) => {},
                 ),
-                // Show individual zones when zoomed in, clusters when zoomed out
-                if (_currentZoom >= _clusterZoomThreshold) ...[
-                  PolygonLayer(polygons: _getVisiblePolygons(zones)),
-                  MarkerLayer(
-                    markers: [
-                      ..._getVisibleZones(zones).map((zone) {
+                children: [
+                  TileLayer(
+                    // Switch between Standard and Dark Matter
+                    urlTemplate: _isDarkMode
+                        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.example.safezone',
+                    subdomains: const ['a', 'b', 'c'],
+                    tileProvider: CancellableNetworkTileProvider(),
+                  ),
+                  // Show individual zones when zoomed in, clusters when zoomed out
+                  if (_currentZoom >= _clusterZoomThreshold) ...[
+                    PolygonLayer(polygons: _getVisiblePolygons(zones)),
+                    MarkerLayer(
+                      markers: [
+                        ..._getVisibleZones(zones).map((zone) {
+                          return Marker(
+                            point: LatLng(zone.centerLat, zone.centerLng),
+                            width: 36,
+                            height: 36,
+                            child: GestureDetector(
+                              onTap: () => _showZoneDetails(zone),
+                              child: _buildMarkerIcon(zone.type),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ] else ...[
+                    // Show city clusters when zoomed out
+                    MarkerLayer(
+                      markers: MockZones.getCityClusters().map((cluster) {
                         return Marker(
-                          point: LatLng(zone.centerLat, zone.centerLng),
-                          width: 36,
-                          height: 36,
+                          point: LatLng(cluster.centerLat, cluster.centerLng),
+                          width: 60,
+                          height: 60,
                           child: GestureDetector(
-                            onTap: () => _showZoneDetails(zone),
-                            child: _buildMarkerIcon(zone.type),
+                            onTap: () {
+                              // Zoom into the city
+                              if (_mapReady) {
+                                _mapController.move(
+                                  LatLng(cluster.centerLat, cluster.centerLng),
+                                  10,
+                                );
+                              }
+                            },
+                            child: _buildClusterMarker(cluster),
                           ),
                         );
-                      }),
-                    ],
-                  ),
-                ] else ...[
-                  // Show city clusters when zoomed out
-                  MarkerLayer(
-                    markers: MockZones.getCityClusters().map((cluster) {
-                      return Marker(
-                        point: LatLng(cluster.centerLat, cluster.centerLng),
-                        width: 60,
-                        height: 60,
-                        child: GestureDetector(
-                          onTap: () {
-                            // Zoom into the city
-                            if (_mapReady) {
-                              _mapController.move(
-                                LatLng(cluster.centerLat, cluster.centerLng),
-                                10,
-                              );
-                            }
-                          },
-                          child: _buildClusterMarker(cluster),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-                // User Location Marker (always visible)
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point:
-                          LatLng(userLocation.latitude, userLocation.longitude),
-                      width: 40,
-                      height: 40,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.blueAccent,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.blueAccent.withOpacity(0.5),
-                              blurRadius: 10,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.navigation,
-                            color: Colors.white, size: 20),
-                      ),
+                      }).toList(),
                     ),
                   ],
-                ),
-              ],
+                  // User Location Marker (always visible)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: LatLng(
+                            userLocation.latitude, userLocation.longitude),
+                        width: 40,
+                        height: 40,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blueAccent,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.blueAccent.withOpacity(0.5),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.navigation,
+                              color: Colors.white, size: 20),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
 
             // State Indicator Badge (shows when zoomed in)
@@ -801,7 +870,8 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   }
 
   Widget _buildZonesOverlay(List<Zone> zones) {
-    return Container(
+    return RepaintBoundary(
+        child: Container(
       width: 380, // Slightly wider for better card layout
       // Height defined by parent AnimatedPositioned
       padding: const EdgeInsets.all(20),
@@ -812,7 +882,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
+            blurRadius: 12, // Reduced from 20 for performance
             offset: const Offset(-4, 4),
             spreadRadius: 2,
           ),
@@ -867,13 +937,16 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
               itemCount: zones.length,
               separatorBuilder: (_, __) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
+                // Wrap items in RepaintBoundary if list is long/complex,
+                // but usually the list itself being in RepaintBoundary (via parent) is enough.
+                // Keeping it simple here.
                 return _buildAestheticPlaceCard(zones[index]);
               },
             ),
           ),
         ],
       ),
-    );
+    ));
   }
 
   /// Build aesthetic place card for sidebar
