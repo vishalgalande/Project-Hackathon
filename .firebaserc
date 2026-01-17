@@ -1,0 +1,19 @@
+{
+  "projects": {
+    "default": "heacathon-f52de",
+    "web": "teamstrawhats"
+  },
+  "targets": {
+    "heacathon-f52de": {
+      "hosting": {
+        "strawhats-web": [
+          "teamstrawhats"
+        ],
+        "strawhats-app": [
+          "heacathon-f52de"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

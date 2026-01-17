@@ -13,31 +13,31 @@ const TEAM_MEMBERS = [
     university: 'Manipal University',
     icon: <Cpu className="w-6 h-6 text-purple-400" />,
     description: 'Specializing in robotics and integrated systems.',
-    socials: { linkedin: '#', github: '#' }
+    socials: { linkedin: 'https://www.linkedin.com/in/shubhamshibupoddar/', github: 'https://github.com/shubhampoddar013' }
   },
   {
-    name: 'Neel Pattel',
+    name: 'Neel Patel',
     role: 'B.Tech Chemical',
     university: 'Manipal University',
     icon: <FlaskConical className="w-6 h-6 text-emerald-400" />,
     description: 'Process optimization and material science expert.',
-    socials: { linkedin: '#', github: '#' }
-  },
-  {
-    name: 'Prajnadeep Sarma',
-    role: 'B.Tech Computer Science',
-    university: 'Manipal University',
-    icon: <Terminal className="w-6 h-6 text-blue-400" />,
-    description: 'Full-stack development and cloud architecture.',
-    socials: { linkedin: '#', github: '#' }
+    socials: { linkedin: 'https://www.linkedin.com/in/neel-patel-0864773a4/', github: 'https://github.com/patelramesh7311-code' }
   },
   {
     name: 'Vishal Galande',
     role: 'B.Tech Computer Science',
     university: 'Manipal University',
     icon: <Code className="w-6 h-6 text-pink-400" />,
+    description: 'Full-stack development and cloud architecture.',
+    socials: { linkedin: 'https://www.linkedin.com/in/vishalgalande/', github: 'https://github.com/vishalgalande/' }
+  },
+  {
+    name: 'Prajnadeep Sarma',
+    role: 'B.Tech Computer Science',
+    university: 'Manipal University',
+    icon: <Terminal className="w-6 h-6 text-blue-400" />,
     description: 'Frontend wizard and UI/UX enthusiast.',
-    socials: { linkedin: '#', github: '#' }
+    socials: { linkedin: 'https://www.linkedin.com/in/prajnadeep-sarma/', github: 'https://github.com/SarmaHighOnCode' }
   }
 ];
 
@@ -99,7 +99,7 @@ export default function Home() {
             >
               <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/80 z-0"></div>
 
-              <div className="relative z-10 h-full p-6 flex flex-col justify-between">
+              <div className="relative z-10 h-full p-6 flex flex-col justify-between items-center text-center">
                 <div>
                   <div className="p-3 w-fit rounded-xl bg-white/5 border border-white/10 mb-4 group-hover:scale-110 transition-transform duration-300">
                     {member.icon}
@@ -115,10 +115,10 @@ export default function Home() {
                   </p>
 
                   <div className="flex gap-4">
-                    <a href={member.socials.linkedin} className="text-white/40 hover:text-[#0077b5] transition-colors">
+                    <a href={member.socials.linkedin} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-[#0077b5] transition-colors">
                       <Linkedin className="w-5 h-5" />
                     </a>
-                    <a href={member.socials.github} className="text-white/40 hover:text-white transition-colors">
+                    <a href={member.socials.github} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-white transition-colors">
                       <Github className="w-5 h-5" />
                     </a>
                   </div>
