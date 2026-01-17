@@ -5,12 +5,15 @@ import { Github, Linkedin, Shield, Terminal, Zap, Code, FlaskConical, Cpu, Users
 import { useState } from 'react';
 import Link from 'next/link';
 
+
+
+
 // Team Data
 const TEAM_MEMBERS = [
   {
     name: 'Shubham Poddar',
     role: 'B.Tech Mechatronics',
-    university: 'Manipal University',
+    university: 'Manipal University Jaipur',
     icon: <Cpu className="w-6 h-6 text-purple-400" />,
     description: 'Specializing in robotics and integrated systems.',
     socials: { linkedin: 'https://www.linkedin.com/in/shubhamshibupoddar/', github: 'https://github.com/shubhampoddar013' }
@@ -18,7 +21,7 @@ const TEAM_MEMBERS = [
   {
     name: 'Neel Patel',
     role: 'B.Tech Chemical',
-    university: 'Manipal University',
+    university: 'Manipal University Jaipur',
     icon: <FlaskConical className="w-6 h-6 text-emerald-400" />,
     description: 'Process optimization and material science expert.',
     socials: { linkedin: 'https://www.linkedin.com/in/neel-patel-0864773a4/', github: 'https://github.com/patelramesh7311-code' }
@@ -26,7 +29,7 @@ const TEAM_MEMBERS = [
   {
     name: 'Vishal Galande',
     role: 'B.Tech Computer Science',
-    university: 'Manipal University',
+    university: 'Manipal University Jaipur',
     icon: <Code className="w-6 h-6 text-pink-400" />,
     description: 'Full-stack development and cloud architecture.',
     socials: { linkedin: 'https://www.linkedin.com/in/vishalgalande/', github: 'https://github.com/vishalgalande/' }
@@ -34,7 +37,7 @@ const TEAM_MEMBERS = [
   {
     name: 'Prajnadeep Sarma',
     role: 'B.Tech Computer Science',
-    university: 'Manipal University',
+    university: 'Manipal University Jaipur',
     icon: <Terminal className="w-6 h-6 text-blue-400" />,
     description: 'Frontend wizard and UI/UX enthusiast.',
     socials: { linkedin: 'https://www.linkedin.com/in/prajnadeep-sarma/', github: 'https://github.com/SarmaHighOnCode' }
@@ -58,13 +61,14 @@ export default function Home() {
 
         {/* Main Title */}
         <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.8 }}
-          className="text-7xl md:text-9xl font-black tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/40"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-5xl md:text-8xl lg:text-9xl font-black tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/40"
         >
           TEAM<br />STRAWHATS
         </motion.h1>
+
 
         <motion.p
           initial={{ opacity: 0 }}
@@ -72,7 +76,7 @@ export default function Home() {
           transition={{ delay: 0.5, duration: 0.8 }}
           className="text-xl text-white/50 max-w-2xl mx-auto mb-8 font-light"
         >
-          A decentralized collective of engineers from Manipal University.
+          A decentralized collective of engineers from Manipal University Jaipur.
         </motion.p>
 
         <motion.div
@@ -135,7 +139,7 @@ export default function Home() {
       {/* Project Section */}
       <section className="relative z-10 py-32 px-6 border-t border-white/5 bg-black/40 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
             <motion.div
               initial={{ opacity: 0, x: -50 }}
@@ -147,7 +151,7 @@ export default function Home() {
                 <Shield className="w-6 h-6 animate-pulse" />
                 <span className="text-sm font-mono tracking-widest uppercase">Project Showcase</span>
               </div>
-              <h2 className="text-5xl font-bold mb-6">SafeTravel &<br />Geofencing</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">SafeTravel &<br />Geofencing</h2>
               <p className="text-white/60 text-lg leading-relaxed mb-8">
                 An advanced AI-powered safety navigation system designed to protect travelers in real-time.
                 Featuring dynamic geofencing, crowd-sourced danger zones, and live transit tracking.
@@ -155,12 +159,12 @@ export default function Home() {
 
               <div className="flex flex-wrap gap-4 mb-10">
                 <a
-                  href="https://safetravel.strawhats.live"
+                  href="https://safetravel.strawhats.co.in"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-6 py-3 rounded-lg bg-[#00F0FF]/10 border border-[#00F0FF]/20 text-[#00F0FF] hover:bg-[#00F0FF]/20 transition-all font-bold"
                 >
-                  safetravel.strawhats.live <ExternalLink className="w-4 h-4" />
+                  safetravel.strawhats.co.in <ExternalLink className="w-4 h-4" />
                 </a>
               </div>
 
@@ -185,7 +189,7 @@ export default function Home() {
               className="relative"
             >
               {/* Abstract Visual Representation of Project */}
-              <div className="aspect-video rounded-2xl border border-white/10 bg-white/5 overflow-hidden flex items-center justify-center relative group cursor-pointer" onClick={() => window.open('https://safetravel.strawhats.live', '_blank')}>
+              <div className="aspect-video rounded-2xl border border-white/10 bg-white/5 overflow-hidden flex items-center justify-center relative group cursor-pointer" onClick={() => window.open('https://safetravel.strawhats.co.in', '_blank')}>
                 <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/20 to-blue-500/20 opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
 
                 <div className="relative z-10 text-center">
@@ -204,8 +208,8 @@ export default function Home() {
       </section>
 
       <footer className="py-8 text-center text-white/20 text-xs font-mono border-t border-white/5">
-        &copy; 2026 TEAM STRAWHATS • MANIPAL UNIVERSITY
+        &copy; 2026 TEAM STRAWHATS • MANIPAL UNIVERSITY JAIPUR
       </footer>
-    </main>
+    </main >
   );
 }
