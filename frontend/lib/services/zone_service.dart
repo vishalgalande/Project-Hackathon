@@ -229,4 +229,117 @@ class ZoneService {
       'var': 'Varanasi',
     };
   }
+
+  // ============ USER REPORTS (Account-Linked) ============
+
+  CollectionReference get _userReportsRef =>
+      _firestore.collection('user_reports');
+
+  /// Get user's reports for a specific zone
+  Stream<QuerySnapshot> getUserReportsForZone(String userId, String zoneId) {
+    return _userReportsRef
+        .where('userId', isEqualTo: userId)
+        .where('zoneId', isEqualTo: zoneId)
+        .orderBy('timestamp', descending: true)
+        .snapshots();
+  }
+
+  /// Get count of user's reports for a zone (for rate limiting)
+  Future<int> getUserReportCountForZone(String userId, String zoneId) async {
+    try {
+      // Using get() instead of count() for better compatibility without composite index
+      final snapshot = await _userReportsRef
+          .where('userId', isEqualTo: userId)
+          .where('zoneId', isEqualTo: zoneId)
+          .get();
+      print(
+          'DEBUG: User $userId has ${snapshot.docs.length} reports for zone $zoneId');
+      return snapshot.docs.length;
+    } catch (e) {
+      print('ERROR getting report count: $e');
+      // If query fails (e.g., missing index), return 0 but log the error
+      return 0;
+    }
+  }
+
+  /// Submit a user report with rate limiting (max 3 per zone per user)
+  /// Returns: null on success, error message on failure
+  Future<String?> submitUserReport({
+    required String userId,
+    required String zoneId,
+    required String cityId,
+    required String reportType,
+  }) async {
+    // Check rate limit
+    final existingCount = await getUserReportCountForZone(userId, zoneId);
+    if (existingCount >= 3) {
+      return 'You have already submitted 3 reports for this zone.';
+    }
+
+    // Create user report document
+    await _userReportsRef.add({
+      'userId': userId,
+      'zoneId': zoneId,
+      'cityId': cityId,
+      'reportType': reportType,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    // Also update zone counters (existing logic)
+    final zoneDoc = await _zonesRef.doc(zoneId).get();
+    final zoneData = zoneDoc.data() as Map<String, dynamic>?;
+    final currentCount = (zoneData?['negativeFeedbackCount'] ?? 0) as int;
+
+    await reportZone(zoneId, cityId, currentCount + 1, reportType: reportType);
+
+    return null; // Success
+  }
+
+  /// Get all reports by a user (for profile/history)
+  Stream<QuerySnapshot> getAllUserReports(String userId) {
+    return _userReportsRef
+        .where('userId', isEqualTo: userId)
+        .orderBy('timestamp', descending: true)
+        .limit(50)
+        .snapshots();
+  }
+
+  /// Delete a user's report and decrement zone counters
+  Future<void> deleteUserReport(
+      String reportId, String zoneId, String cityId, String reportType) async {
+    // Delete the report document
+    await _userReportsRef.doc(reportId).delete();
+
+    // Decrement zone counters
+    final zoneDoc = await _zonesRef.doc(zoneId).get();
+    final zoneData = zoneDoc.data() as Map<String, dynamic>?;
+    final currentCount = (zoneData?['negativeFeedbackCount'] ?? 1) as int;
+
+    final updates = <String, dynamic>{
+      'negativeFeedbackCount': (currentCount - 1).clamp(0, 999),
+    };
+
+    // Decrement specific report type counter
+    switch (reportType) {
+      case 'theft':
+        updates['theftReports'] = FieldValue.increment(-1);
+        break;
+      case 'harassment':
+        updates['harassmentReports'] = FieldValue.increment(-1);
+        break;
+      case 'lighting':
+        updates['poorLightingReports'] = FieldValue.increment(-1);
+        break;
+      case 'suspicious':
+        updates['suspiciousReports'] = FieldValue.increment(-1);
+        break;
+    }
+
+    await _zonesRef.doc(zoneId).update(updates);
+
+    // Recalculate city aggregates
+    if (cityId.isNotEmpty) {
+      await _updateCityAggregates(cityId);
+    }
+  }
 }

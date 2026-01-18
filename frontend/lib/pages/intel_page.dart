@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../app/theme.dart';
 import '../app/providers.dart';
 import '../models/zone.dart';
@@ -347,86 +348,289 @@ class IntelPage extends ConsumerWidget {
   }
 
   void _showReportDialog(BuildContext context, WidgetRef ref, Zone zone) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    // Check if user is logged in
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please login to submit reports'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      builder: (context) => _ReportBottomSheet(zone: zone, userId: user.uid),
+    );
+  }
+}
+
+/// Stateful bottom sheet for account-linked reporting
+class _ReportBottomSheet extends ConsumerStatefulWidget {
+  final Zone zone;
+  final String userId;
+
+  const _ReportBottomSheet({required this.zone, required this.userId});
+
+  @override
+  ConsumerState<_ReportBottomSheet> createState() => _ReportBottomSheetState();
+}
+
+class _ReportBottomSheetState extends ConsumerState<_ReportBottomSheet> {
+  int _userReportCount = 0;
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _userReports = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserReports();
+  }
+
+  Future<void> _loadUserReports() async {
+    final service = ref.read(zoneServiceProvider);
+
+    int count = 0;
+    try {
+      count = await service.getUserReportCountForZone(
+          widget.userId, widget.zone.id);
+    } catch (e) {
+      debugPrint('ERROR loading report count: $e');
+    }
+
+    // Also load report history
+    try {
+      final reportsStream =
+          service.getUserReportsForZone(widget.userId, widget.zone.id);
+      reportsStream.first.then((snapshot) {
+        if (mounted) {
+          setState(() {
+            _userReports = snapshot.docs.map((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              return {
+                'id': doc.id,
+                'type': data['reportType'] ?? 'unknown',
+                'timestamp': data['timestamp'],
+              };
+            }).toList();
+          });
+        }
+      });
+    } catch (e) {
+      debugPrint('ERROR loading report history: $e');
+    }
+
+    if (mounted) {
+      setState(() {
+        _userReportCount = count;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _submitReport(String reportType) async {
+    final service = ref.read(zoneServiceProvider);
+    final error = await service.submitUserReport(
+      userId: widget.userId,
+      zoneId: widget.zone.id,
+      cityId: widget.zone.cityId,
+      reportType: reportType,
+    );
+
+    Navigator.pop(context);
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Report Safety Issue',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ Report submitted! (${_userReportCount + 1}/3 used)'),
+          backgroundColor: Colors.green.shade700,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteReport(String reportId, String reportType) async {
+    final service = ref.read(zoneServiceProvider);
+    try {
+      await service.deleteUserReport(
+          reportId, widget.zone.id, widget.zone.cityId, reportType);
+      setState(() {
+        _userReports.removeWhere((r) => r['id'] == reportId);
+        _userReportCount = (_userReportCount - 1).clamp(0, 3);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Report deleted'), backgroundColor: Colors.blue),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Error deleting: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  String _getReportTypeLabel(String type) {
+    switch (type) {
+      case 'theft':
+        return 'Theft / Pickpocketing';
+      case 'harassment':
+        return 'Harassment';
+      case 'lighting':
+        return 'Poor Lighting';
+      case 'suspicious':
+        return 'Suspicious Activity';
+      default:
+        return type;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canReport = _userReportCount < 3;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Report Safety Issue',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: canReport ? Colors.green.shade50 : Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: canReport ? Colors.green : Colors.red,
+                  ),
+                ),
+                child: Text(
+                  '$_userReportCount/3 used',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color:
+                        canReport ? Colors.green.shade700 : Colors.red.shade700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            canReport
+                ? 'Your reports help mark this zone as DANGER (>10 reports).'
+                : 'You have reached the report limit for this zone.',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 24),
+
+          // Report Options
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (canReport) ...[
+            _buildReportOption(
+                'Theft / Pickpocketing', Icons.run_circle_outlined, 'theft'),
+            _buildReportOption(
+                'Harassment', Icons.record_voice_over_outlined, 'harassment'),
+            _buildReportOption(
+                'Poor Lighting', Icons.lightbulb_outline, 'lighting'),
+            _buildReportOption(
+                'Suspicious Activity', Icons.visibility_outlined, 'suspicious'),
+          ] else
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.lock_outline, color: Colors.grey),
+                  SizedBox(width: 12),
+                  Text('Report limit reached for this zone'),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Your reports help mark this zone as DANGER (>10 reports).',
-              style: TextStyle(color: Colors.grey.shade600),
+
+          // User's Previous Reports with Delete
+          if (_userReports.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            const Text(
+              'Your Reports (tap to delete)',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Colors.black87),
             ),
-            const SizedBox(height: 24),
-            _buildReportOption(context, ref, zone, 'Theft / Pickpocketing',
-                Icons.run_circle_outlined, 'theft'),
-            _buildReportOption(context, ref, zone, 'Harassment',
-                Icons.record_voice_over_outlined, 'harassment'),
-            _buildReportOption(context, ref, zone, 'Poor Lighting',
-                Icons.lightbulb_outline, 'lighting'),
-            _buildReportOption(context, ref, zone, 'Suspicious Activity',
-                Icons.visibility_outlined, 'suspicious'),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+            ..._userReports.map((report) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle,
+                          color: Colors.green.shade400, size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                          child: Text(_getReportTypeLabel(report['type']),
+                              style: TextStyle(
+                                  color: Colors.grey.shade700, fontSize: 13))),
+                      IconButton(
+                        icon: Icon(Icons.delete_outline,
+                            color: Colors.red.shade300, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () =>
+                            _deleteReport(report['id'], report['type']),
+                        tooltip: 'Delete report',
+                      ),
+                    ],
+                  ),
+                )),
           ],
-        ),
+
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }
 
-  Widget _buildReportOption(BuildContext context, WidgetRef ref, Zone zone,
-      String title, IconData icon, String reportType) {
+  Widget _buildReportOption(String title, IconData icon, String reportType) {
     return InkWell(
-      onTap: () async {
-        // Increment feedback count
-        final newCount = zone.negativeFeedbackCount + 1;
-
-        // Update Firebase with report type
-        try {
-          final service = ref.read(zoneServiceProvider);
-          await service.reportZone(zone.id, zone.cityId, newCount,
-              reportType: reportType);
-
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                newCount > 10
-                    ? '⚠️ Zone marked as DANGER! Total reports: $newCount'
-                    : '✅ Report submitted! Total reports: $newCount',
-                style: const TextStyle(color: Colors.white),
-              ),
-              backgroundColor:
-                  newCount > 10 ? AppColors.dangerZone : Colors.green.shade700,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        } catch (e) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error submitting report: $e'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      },
+      onTap: () => _submitReport(reportType),
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
