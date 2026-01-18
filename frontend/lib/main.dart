@@ -13,7 +13,7 @@ import 'pages/command_center_page.dart';
 import 'pages/intel_page.dart';
 import 'pages/admin_page.dart';
 import 'features/transit_tracker_screen.dart';
-import 'core/shader_manager.dart';
+
 import 'features/about/about_page.dart';
 import 'features/cinematic_intro_screen.dart';
 import 'core/browser_guard.dart';
@@ -68,8 +68,8 @@ void main() async {
 final GoRouter _router = GoRouter(
   initialLocation: '/splash',
   observers: [
-    if (kIsWeb)
-      FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+    // if (kIsWeb)
+    //   FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
   ],
   routes: [
     GoRoute(

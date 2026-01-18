@@ -40,7 +40,8 @@ class _BrowserGuardState extends State<BrowserGuard> {
       final isSupported = userAgent.contains('chrome') ||
           userAgent.contains('crios') || // Chrome on iOS
           userAgent.contains('safari') || // Safari
-          userAgent.contains('applewebkit'); // Any WebKit (iOS)
+          userAgent.contains('applewebkit') || // Any WebKit (iOS)
+          userAgent.contains('firefox'); // Firefox
 
       if (mounted) {
         setState(() {
@@ -61,6 +62,10 @@ class _BrowserGuardState extends State<BrowserGuard> {
 
   @override
   Widget build(BuildContext context) {
+    // Build immediately to rule out guard issues
+    return widget.child;
+
+    /* Original Logic
     if (_isLoading) {
       return Container(
           color: Colors.black); // Simple black screen while checking
@@ -71,6 +76,7 @@ class _BrowserGuardState extends State<BrowserGuard> {
     }
 
     return widget.child;
+    */
   }
 
   Widget _buildIncompatibleScreen() {

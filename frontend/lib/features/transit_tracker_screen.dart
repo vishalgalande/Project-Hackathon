@@ -166,28 +166,28 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen>
 
   void _listenToReports() {
     // Listen to reports created in the last 15 minutes
-    final cutoff = DateTime.now().subtract(const Duration(minutes: 15));
+    // final cutoff = DateTime.now().subtract(const Duration(minutes: 15));
 
-    _reportsSubscription = FirebaseFirestore.instance
-        .collection('reports')
-        .where('timestamp', isGreaterThan: Timestamp.fromDate(cutoff))
-        .snapshots()
-        .listen((snapshot) {
-      for (var change in snapshot.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          final data = change.doc.data() as Map<String, dynamic>;
-          final vehicleId = data['vehicle_id'];
+    // _reportsSubscription = FirebaseFirestore.instance
+    //     .collection('reports')
+    //     .where('timestamp', isGreaterThan: Timestamp.fromDate(cutoff))
+    //     .snapshots()
+    //     .listen((snapshot) {
+    //   for (var change in snapshot.docChanges) {
+    //     if (change.type == DocumentChangeType.added) {
+    //       final data = change.doc.data() as Map<String, dynamic>;
+    //       final vehicleId = data['vehicle_id'];
 
-          if (vehicleId != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text(
-                      '⚠️ Alert: Vehicle $vehicleId reported. Re-routing...')),
-            );
-          }
-        }
-      }
-    });
+    //       if (vehicleId != null) {
+    //         ScaffoldMessenger.of(context).showSnackBar(
+    //           SnackBar(
+    //               content: Text(
+    //                   '⚠️ Alert: Vehicle $vehicleId reported. Re-routing...')),
+    //         );
+    //       }
+    //     }
+    //   }
+    // });
   }
 
   void _onReportPressed() async {
@@ -203,11 +203,11 @@ class _TransitTrackerScreenState extends State<TransitTrackerScreen>
             backgroundColor: Colors.green),
       );
       try {
-        await FirebaseFirestore.instance.collection('reports').add({
-          'vehicle_id': result['vehicle_id'] ?? 'unknown',
-          'report_type': result['type'],
-          'timestamp': FieldValue.serverTimestamp(),
-        });
+        // await FirebaseFirestore.instance.collection('reports').add({
+        //   'vehicle_id': result['vehicle_id'] ?? 'unknown',
+        //   'report_type': result['type'],
+        //   'timestamp': FieldValue.serverTimestamp(),
+        // });
       } catch (e) {
         print("Error submitting report: $e");
       }
