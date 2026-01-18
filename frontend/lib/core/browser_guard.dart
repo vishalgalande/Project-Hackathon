@@ -37,12 +37,14 @@ class _BrowserGuardState extends State<BrowserGuard> {
 
       // Check for Chromium-based browsers (Chrome, Edge, Brave, Opera usually have 'chrome')
       // Firefox does not have 'chrome'. Safari does not have 'chrome' (usually).
-      final isChrome = userAgent.contains('chrome') ||
-          userAgent.contains('crios'); // crios is chrome on ios
+      final isSupported = userAgent.contains('chrome') ||
+          userAgent.contains('crios') || // Chrome on iOS
+          userAgent.contains('safari') || // Safari
+          userAgent.contains('applewebkit'); // Any WebKit (iOS)
 
       if (mounted) {
         setState(() {
-          _isCompatible = isChrome;
+          _isCompatible = isSupported;
           _isLoading = false;
         });
       }
