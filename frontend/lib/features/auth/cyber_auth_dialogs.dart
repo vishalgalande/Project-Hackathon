@@ -64,16 +64,38 @@ class _CyberAuthDialogState extends State<_CyberAuthDialog>
       if (_isLogin) {
         print("CyberAuth: Attempting Login...");
         // LOGIN LOGIC
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailCtrl.text.trim(),
-          password: _passCtrl.text.trim(),
-        );
+        try {
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+            email: _emailCtrl.text.trim(),
+            password: _passCtrl.text.trim(),
+          );
+        } catch (loginError) {
+          // Catch Firefox-specific TypeError and show user-friendly message
+          final errorString = loginError.toString();
+          if (errorString.contains('minified') ||
+              errorString.contains('TypeError')) {
+            throw Exception(
+                'Login failed on this browser. Please try Chrome or check your credentials.');
+          }
+          rethrow;
+        }
       } else {
         // SIGNUP LOGIC WITH FIRESTORE
-        final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailCtrl.text.trim(),
-          password: _passCtrl.text.trim(),
-        );
+        UserCredential cred;
+        try {
+          cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+            email: _emailCtrl.text.trim(),
+            password: _passCtrl.text.trim(),
+          );
+        } catch (signupError) {
+          final errorString = signupError.toString();
+          if (errorString.contains('minified') ||
+              errorString.contains('TypeError')) {
+            throw Exception(
+                'Signup failed on this browser. Please try Chrome.');
+          }
+          rethrow;
+        }
 
         final user = cred.user;
         if (user != null) {

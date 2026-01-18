@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -33,14 +34,20 @@ class _LandingPageState extends ConsumerState<LandingPage> {
   User? _user;
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0.0;
+  String? _debugError;
+  Timer? _authTimer;
 
   @override
   void initState() {
     super.initState();
-    FirebaseAuth.instance.authStateChanges().listen((user) {
-      if (mounted) setState(() => _user = user);
-    });
-    _user = FirebaseAuth.instance.currentUser;
+    try {
+      // Manual polling to bypass Firefox Stream crash
+      _checkAuth();
+      _authTimer =
+          Timer.periodic(const Duration(seconds: 2), (_) => _checkAuth());
+    } catch (e, stack) {
+      setState(() => _debugError = "Init Error: $e\n$stack");
+    }
     _scrollController.addListener(_onScroll);
   }
 
@@ -48,8 +55,20 @@ class _LandingPageState extends ConsumerState<LandingPage> {
     if (mounted) setState(() => _scrollOffset = _scrollController.offset);
   }
 
+  void _checkAuth() {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (_user?.uid != user?.uid) {
+        if (mounted) setState(() => _user = user);
+      }
+    } catch (e) {
+      print("Auth Check Error: $e");
+    }
+  }
+
   @override
   void dispose() {
+    _authTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -71,6 +90,20 @@ class _LandingPageState extends ConsumerState<LandingPage> {
         fit: StackFit.expand,
         children: [
           const NebulaBackground(),
+          if (_debugError != null)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.9),
+                padding: const EdgeInsets.all(40),
+                child: SingleChildScrollView(
+                  child: SelectableText(
+                    "DEBUG ERROR:\n$_debugError",
+                    style: const TextStyle(
+                        color: Colors.red, fontSize: 16, fontFamily: 'Courier'),
+                  ),
+                ),
+              ),
+            ),
           CustomScrollView(
             controller: _scrollController,
             slivers: [

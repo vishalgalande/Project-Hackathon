@@ -15,7 +15,7 @@ class SosPage extends StatefulWidget {
 class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
   final SosService _sosService = SosService();
   late AnimationController _controller;
-  List<DocumentSnapshot> _trustedContacts = []; 
+  List<DocumentSnapshot> _trustedContacts = [];
   StreamSubscription? _contactsSubscription;
   final TextEditingController _contactController = TextEditingController();
 
@@ -26,7 +26,7 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
       vsync: this,
       duration: const Duration(seconds: 1),
     )..repeat(reverse: true);
-    
+
     _checkPermissions();
     _subscribeToContacts();
   }
@@ -39,12 +39,12 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
         });
       }
     }, onError: (error) {
-       print("Error loading contacts: $error");
-       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text('Error loading contacts. Please log in.')),
-         );
-       }
+      print("Error loading contacts: $error");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading contacts. Please log in.')),
+        );
+      }
     });
   }
 
@@ -73,10 +73,10 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
         }
       } catch (e) {
         if (mounted) {
-           Navigator.pop(context);
-           ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text('Failed to add contact: $e')),
-           );
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to add contact: $e')),
+          );
         }
       }
     }
@@ -104,7 +104,8 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       appBar: AppBar(
-        title: Text('Emergency SOS', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        title: Text('Emergency SOS',
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -120,7 +121,9 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
                   onTap: () async {
                     if (_trustedContacts.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please add at least one trusted contact first!')),
+                        const SnackBar(
+                            content: Text(
+                                'Please add at least one trusted contact first!')),
                       );
                       return;
                     }
@@ -167,60 +170,50 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white70),
               ),
-              
+
               const SizedBox(height: 48),
 
               // National Emergency Numbers
-              Text('National Emergency Numbers', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text('National Emergency Numbers',
+                  style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
               const SizedBox(height: 16),
+              _buildEmergencyCard('Police', 'For immediate police assistance',
+                  '100', Colors.blue, Icons.local_police),
+              _buildEmergencyCard('Ambulance', 'Medical emergency services',
+                  '102', Colors.red, Icons.medical_services),
+              _buildEmergencyCard('Fire Department', 'Fire emergency services',
+                  '101', Colors.orange, Icons.fire_truck),
               _buildEmergencyCard(
-                'Police', 
-                'For immediate police assistance', 
-                '100', 
-                Colors.blue, 
-                Icons.local_police
-              ),
-              _buildEmergencyCard(
-                'Ambulance', 
-                'Medical emergency services', 
-                '102', 
-                Colors.red, 
-                Icons.medical_services
-              ),
-              _buildEmergencyCard(
-                'Fire Department', 
-                'Fire emergency services', 
-                '101', 
-                Colors.orange, 
-                Icons.fire_truck
-              ),
-              _buildEmergencyCard(
-                'Women Helpline', 
-                '24x7 women safety helpline', 
-                '1091', 
-                Colors.purple, 
-                Icons.woman
-              ),
+                  'Women Helpline',
+                  '24x7 women safety helpline',
+                  '1091',
+                  Colors.purple,
+                  Icons.woman),
 
               const SizedBox(height: 32),
-              
+
               // Tourist Services
-              Text('Tourist Services', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text('Tourist Services',
+                  style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
               const SizedBox(height: 16),
               _buildEmergencyCard(
-                'Tourist Helpline', 
-                'Ministry of Tourism helpline', 
-                '1363', 
-                Colors.indigo, 
-                Icons.travel_explore
-              ),
+                  'Tourist Helpline',
+                  'Ministry of Tourism helpline',
+                  '1363',
+                  Colors.indigo,
+                  Icons.travel_explore),
               _buildEmergencyCard(
-                'National Emergency', 
-                'Single emergency number for all services', 
-                '112', 
-                Colors.green, 
-                Icons.shield
-              ),
+                  'National Emergency',
+                  'Single emergency number for all services',
+                  '112',
+                  Colors.green,
+                  Icons.shield),
 
               const SizedBox(height: 32),
 
@@ -264,9 +257,11 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       tileColor: Colors.white.withOpacity(0.05),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       leading: const Icon(Icons.person, color: Colors.white70),
-                      title: Text(phone, style: const TextStyle(color: Colors.white)),
+                      title: Text(phone,
+                          style: const TextStyle(color: Colors.white)),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete, color: Colors.redAccent),
                         onPressed: () => _removeContact(doc.id),
@@ -286,7 +281,8 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF2A2A2A),
-        title: const Text('Add Trusted Contact', style: TextStyle(color: Colors.white)),
+        title: const Text('Add Trusted Contact',
+            style: TextStyle(color: Colors.white)),
         content: TextField(
           controller: _contactController,
           keyboardType: TextInputType.phone,
@@ -294,7 +290,8 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
           decoration: const InputDecoration(
             hintText: 'Enter phone number',
             hintStyle: TextStyle(color: Colors.white38),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+            enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.white38)),
           ),
         ),
         actions: [
@@ -311,7 +308,8 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildEmergencyCard(String title, String subtitle, String number, Color color, IconData icon) {
+  Widget _buildEmergencyCard(String title, String subtitle, String number,
+      Color color, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -336,21 +334,30 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+                  Text(title,
+                      style: GoogleFonts.inter(
+                          fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+                  Text(subtitle,
+                      style: GoogleFonts.inter(
+                          color: Colors.white54, fontSize: 12)),
                 ],
               ),
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(number, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: color, fontSize: 18)),
+                Text(number,
+                    style: GoogleFonts.inter(
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                        fontSize: 18)),
                 const SizedBox(height: 8),
                 InkWell(
                   onTap: () => launchUrl(Uri.parse('tel:$number')),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -361,7 +368,11 @@ class _SosPageState extends State<SosPage> with SingleTickerProviderStateMixin {
                       children: [
                         Icon(Icons.call, size: 12, color: color),
                         const SizedBox(width: 4),
-                        Text('Call', style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+                        Text('Call',
+                            style: TextStyle(
+                                color: color,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),

@@ -34,7 +34,22 @@
 
   <link rel="manifest" href="manifest.json">
 
+  <!-- Firebase SDKs for Web (Compat/Legacy required for some FlutterFire versions/browsers) -->
+  <!-- Firebase SDKs for Web (Compat/Legacy required for some FlutterFire versions/browsers) -->
+  <!-- <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script> -->
+
   <script>
+    console.log("Checking Firebase availability...");
+    if (window.firebase) {
+      console.log("Firebase Global Object Found:", window.firebase);
+      console.log("Firebase App Version:", window.firebase.SDK_VERSION);
+    } else {
+      console.error("CRITICAL: Firebase Global Object NOT found! Scripts may have failed to load.");
+    }
+
     // Force HTML renderer for iOS compatibility to avoid white screens/crashes
     window.flutterWebRenderer = "html";
 
